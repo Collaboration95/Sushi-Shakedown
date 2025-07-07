@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00345228a581db4489b10601d3bd18ed, type: 3}
+  m_Name: eel-raw-uncut_DraggableObjectSO
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 4995639548779142908, guid: 6103ac8cf450335498bac821669f6f40, type: 3}
+  sprite: {fileID: 21300000, guid: bc562f1093115ab4c96b60938a9cfcd4, type: 3}
+  objectName: eel-raw-uncut

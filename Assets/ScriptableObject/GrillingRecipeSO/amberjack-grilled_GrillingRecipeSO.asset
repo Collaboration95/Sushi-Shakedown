@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2d6de23084a0744ad8c23cf4380b38, type: 3}
+  m_Name: amberjack-grilled_GrillingRecipeSO
+  m_EditorClassIdentifier: 
+  inputIngredient: {fileID: 11400000, guid: b423325a1c695d64997aa65ddac11183, type: 2}
+  grillingProgressMax: 10
+  outputIngredient: {fileID: 11400000, guid: 927a1cf6dd65a564dbe533b9ffd4580d, type: 2}

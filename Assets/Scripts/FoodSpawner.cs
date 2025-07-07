@@ -16,6 +16,7 @@ public class FoodSpawner : MonoBehaviour
 
     public void SpawnFoodAtCursor(Vector3 position)
     {
+        Debug.Log(foodPrefab);
         GameObject newFood = Instantiate(foodPrefab, position, Quaternion.identity);
 
         //auto-pickup and drag immediately

@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - Coin
   layers:
   - Default
   - TransparentFX
@@ -11,6 +12,10 @@ TagManager:
   - 
   - Water
   - UI
+  - Background
+  - Customer
+  - Food
+  - coin
   - spawn
   - baseContainer
   - draggable
@@ -33,13 +38,12 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
-  - 
-  - 
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Pause
+    uniqueID: 3771376057
     locked: 0
   m_RenderingLayers:
   - Default

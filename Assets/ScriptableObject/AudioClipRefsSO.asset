@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4143ccfa01b89744b81ece52c5e1b8dc, type: 3}
+  m_Name: AudioClipRefsSO
+  m_EditorClassIdentifier: 
+  cut: {fileID: 8300000, guid: e519f586b4ac0904e877dfab85ed729e, type: 3}
+  grill: {fileID: 8300000, guid: 511c1cbfb8b48b64083aec78fe17115f, type: 3}
+  trash: {fileID: 8300000, guid: 6024ba1d53d005f48a96b3a9f6bacedd, type: 3}
+  addPlateIngredient: {fileID: 8300000, guid: 9c88983fa5906dc41944ec5a43b6b5c7, type: 3}
+  addCupIngredient: {fileID: 8300000, guid: 42343f40363ab2c42aa0eb6618527761, type: 3}
+  placeItem: {fileID: 8300000, guid: 961379cce253f794abff0d24df806b68, type: 3}

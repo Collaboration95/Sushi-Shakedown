@@ -6,8 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Guru/MainMenu.unity
+    guid: 2df2cb4bfd60b4f8287266bb26116268
+  - enabled: 1
     path: Assets/Scenes/KitchenScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
+  - enabled: 1
+    path: Assets/Scenes/Guru/Customers.unity
+    guid: 6d892bdcf88c74e4f951980bc2592a27
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: e9ca75e2000e5478696b30395fee2d4f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

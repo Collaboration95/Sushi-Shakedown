@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2d6de23084a0744ad8c23cf4380b38, type: 3}
+  m_Name: shrimp-raw-cut_GrillingRecipeSO
+  m_EditorClassIdentifier: 
+  inputIngredient: {fileID: 11400000, guid: df2a10a99ee9f3545b5659a5f2654147, type: 2}
+  grillingProgressMax: 12
+  outputIngredient: {fileID: 11400000, guid: a6258a4b7c2d6dd4ba0822410b56e3e5, type: 2}
