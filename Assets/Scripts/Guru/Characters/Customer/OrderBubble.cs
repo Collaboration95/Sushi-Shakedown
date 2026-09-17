@@ -31,21 +31,36 @@ public class OrderBubble : DebuggableMonoBehaviour
         {
             Debug.LogWarning("OrderBubble: No CustomerController assigned or found in parents!");
         }
+
+        // Order bubbles are enabled just before CustomerController calls
+        // StartOrder, so Unity may not have invoked this object's Start method
+        // yet. Resolve the manager during Awake as well as in StartOrder.
+        ResolveFoodManager();
     }
 
     public void Start()
     {
+        ResolveFoodManager();
+    }
+
+    private void ResolveFoodManager()
+    {
+        if (FM != null)
+        {
+            return;
+        }
+
         var gameManager = GameObject.Find("GuruGameManager");
         if (gameManager == null)
         {
-            Debug.Log("OrderBubble: GameManager not found in scene!");
+            Debug.LogWarning("OrderBubble: GameManager not found in scene!");
             return;
         }
 
         FM = gameManager.GetComponent<FoodManager>();
         if (FM == null)
         {
-            Debug.Log("OrderBubble: FoodManager component not found on GameManager!");
+            Debug.LogWarning("OrderBubble: FoodManager component not found on GameManager!");
         }
     }
 
@@ -53,6 +68,13 @@ public class OrderBubble : DebuggableMonoBehaviour
     // New StartOrder method that accepts a number parameter.
     public void StartOrder(int numberOfOrders = 1)
     {
+        ResolveFoodManager();
+        if (FM == null)
+        {
+            Debug.LogError("OrderBubble: Cannot start order because FoodManager is unavailable.", this);
+            return;
+        }
+
         // Determine how many orders can be spawned based on remaining slots.
         int availableSlots = maxSlots - orderedFoods.Count;
         int spawnCount = Mathf.Min(numberOfOrders, availableSlots);
