@@ -19,15 +19,16 @@ public class PlateDraggable : DraggableObject
     //current max recipe types [rice, fish, condiments]
     public bool TryHandleIngredient(DraggableObject draggableObject)
     {
-        Debug.Log($"Try handle object{draggableObject}");
+        if (draggableObject == null) return false;
+        RuntimeLog.Write($"Try handle object{draggableObject}");
         //check if its valid item in plateIngredientSOArray
-        Debug.Log($"[PlateDraggable] Try handle object {draggableObject.name}");
+        RuntimeLog.Write($"[PlateDraggable] Try handle object {draggableObject.name}");
 
         DraggableObjectSO incomingSO = draggableObject.GetDraggableObjectSO();
         PlateIngredientSO ingredientInfo = GetPlateIngredientSO(incomingSO);
         if (ingredientInfo == null)
         {
-            Debug.LogWarning("Ingredient not valid for this plate.");
+            RuntimeLog.Write("Ingredient is not accepted by this dish.");
             return false;
         }
         // Check if the type is already on the plate
@@ -46,7 +47,7 @@ public class PlateDraggable : DraggableObject
             currentIngredients.Add(incomingSO);
 
             EventManager.Instance.Trigger<object>("AddPlateIngredientAudio", this);
-            Debug.Log($"Added {ingredientType} ({incomingSO.name}) to plate.");
+            RuntimeLog.Write($"Added {ingredientType} ({incomingSO.name}) to plate.");
         }
 
         // You can trigger a UI update or visual stacking here
@@ -67,9 +68,10 @@ public class PlateDraggable : DraggableObject
     }
     private PlateIngredientSO GetPlateIngredientSO(DraggableObjectSO inputSO)
     {
+        if (plateIngredientSOArray == null || inputSO == null) return null;
         foreach (var plateIngredientSO in plateIngredientSOArray)
         {
-            if (plateIngredientSO.draggableObjectSO == inputSO)
+            if (plateIngredientSO != null && plateIngredientSO.draggableObjectSO == inputSO)
                 return plateIngredientSO;
         }
         return null;
@@ -82,7 +84,7 @@ public class PlateDraggable : DraggableObject
     {
         currentIngredientTypes.Clear();
         currentIngredients.Clear();
-        Debug.Log("Plate cleared.");
+        RuntimeLog.Write("Plate cleared.");
     }
 
     public int GetIngredientCount()

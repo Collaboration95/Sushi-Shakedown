@@ -23,6 +23,7 @@ public class TrashbinVisual : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (EventManager.Instance == null) return;
         // Always unsubscribe on destroy to prevent memory leaks
         EventManager.Instance.Unsubscribe<TrashBin>("trashbinSelectedVisual", OnTrashBinSelectedVisual);
         EventManager.Instance.Unsubscribe<TrashBin>("trashbinDeselectedVisual", OnTrashBinDeselectedVisual);

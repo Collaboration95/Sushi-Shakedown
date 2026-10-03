@@ -11,11 +11,11 @@ public class TrashBin : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.GetComponent<DraggableObject>() != null) //might need to change to prevent condiments and drink source from being trashed
+        if (other.TryGetComponent<DraggableObject>(out var draggable) && draggable.IsBeingDragged()) //might need to change to prevent condiments and drink source from being trashed
         {
-            draggableInZone = other.GetComponent<DraggableObject>();
-            Debug.Log($"[TrashBin] {other.name} entered trash zone.");
-            cd.DeductScore(3); // Deduct score when an object enters the trash bin
+            draggableInZone = draggable;
+            RuntimeLog.Write($"[TrashBin] {other.name} entered trash zone.");
+
         }
     }
 
@@ -23,7 +23,7 @@ public class TrashBin : MonoBehaviour
     {
         if (draggableInZone != null && other.gameObject == draggableInZone.gameObject)
         {
-            Debug.Log($"[TrashBin] {other.name} exited trash zone.");
+            RuntimeLog.Write($"[TrashBin] {other.name} exited trash zone.");
             draggableInZone = null;
         }
     }
@@ -45,9 +45,10 @@ public class TrashBin : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log($"[TrashBin] Destroying {draggableInZone.name}");
+                    RuntimeLog.Write($"[TrashBin] Destroying {draggableInZone.name}");
                     EventManager.Instance.Trigger<object>("ObjectTrashedAudio", this);
                     //!TODO, need to do additional checker to make sure dont destroy condiments and drinks ingredients
+                    if (cd != null) cd.DeductScore(3);
                     Destroy(draggableInZone.gameObject);
                     draggableInZone = null;
                 }

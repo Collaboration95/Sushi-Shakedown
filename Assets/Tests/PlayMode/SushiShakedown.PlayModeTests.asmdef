@@ -1,0 +1,11 @@
+{
+  "name": "SushiShakedown.PlayModeTests",
+  "references": [
+    "SushiShakedown.Runtime",
+    "Unity.ugui",
+    "Unity.TextMeshPro"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

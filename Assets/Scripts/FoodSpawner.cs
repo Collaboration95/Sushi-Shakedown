@@ -16,7 +16,12 @@ public class FoodSpawner : MonoBehaviour
 
     public void SpawnFoodAtCursor(Vector3 position)
     {
-        Debug.Log(foodPrefab);
+        if (foodPrefab == null || foodPrefab.GetComponent<DraggableObject>() == null)
+        {
+            Debug.LogError("FoodSpawner requires a prefab with DraggableObject.", this);
+            return;
+        }
+        RuntimeLog.Write(foodPrefab);
         GameObject newFood = Instantiate(foodPrefab, position, Quaternion.identity);
 
         //auto-pickup and drag immediately

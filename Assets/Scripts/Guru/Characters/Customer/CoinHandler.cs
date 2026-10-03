@@ -10,45 +10,52 @@ public class CoinHandler : MonoBehaviour
     [Header("Target (score icon)")]
     public GameObject scoreTarget;   // drag the UI Image / Text here
     private float travelTime = .7f;
+    private Camera sceneCamera;
+    private Canvas targetCanvas;
+    private readonly System.Collections.Generic.HashSet<GameObject> coins = new System.Collections.Generic.HashSet<GameObject>();
     public ScoreParent ScoreParent; // Reference to the ScoreParent script
 
     public static CoinHandler Instance { get; private set; }
 
     void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
     }
 
     public void Start()
     {
-        scoreTarget = GameObject.Find("CoinFloating");
-        ScoreParent = GameObject.Find("Score").GetComponent<ScoreParent>();
+        if (scoreTarget == null) scoreTarget = GameObject.Find("CoinFloating");
+        if (ScoreParent == null) ScoreParent = FindFirstObjectByType<ScoreParent>();
+        sceneCamera = Camera.main;
+        if (scoreTarget != null) targetCanvas = scoreTarget.GetComponentInParent<Canvas>();
 
     }
 
     // --------------------------------------------------------------------
     public void SpawnCoins(int count, Vector3 worldSpawnPos)
     {
-        // start the coroutine that handles both spawning and delays
+        if (!isActiveAndEnabled || coinPrefab == null || scoreTarget == null || ScoreParent == null || sceneCamera == null) return;
         StartCoroutine(SpawnCoinsRoutine(count, worldSpawnPos, 0.1f));
     }
 
     private IEnumerator SpawnCoinsRoutine(int count, Vector3 worldSpawnPos, float delayBetweenSpawns)
     {
+        var delay = new WaitForSeconds(delayBetweenSpawns);
         for (int i = 0; i < count; i++)
         {
-            Vector3 offset = Random.insideUnitCircle * randomSpread;
+
             GameObject coin = Instantiate(
                 coinPrefab,
                 worldSpawnPos,
                 Quaternion.identity,
                 null
             );
+            coins.Add(coin);
             StartCoroutine(MoveCoinToTarget(coin));
 
             // wait before spawning the next one
-            yield return new WaitForSeconds(delayBetweenSpawns);
+            yield return delay;
         }
     }
 
@@ -64,7 +71,7 @@ public class CoinHandler : MonoBehaviour
         while (coin != null &&
                Vector3.Distance(coin.transform.position, targetWorld) > 0.065f)
         {
-            // Debug.Log("Coin distance to target: " +
+            // RuntimeLog.Write("Coin distance to target: " +
             //           Vector3.Distance(coin.transform.position, targetWorld));
             coin.transform.position = Vector3.MoveTowards(
                 coin.transform.position,
@@ -74,20 +81,34 @@ public class CoinHandler : MonoBehaviour
 
             yield return null;
         }
-        ScoreParent.DeleteCoin(coin); // Call the static method to handle coin collection
-        // Debug.Log("Coin reached target: " + coin);
+        coins.Remove(coin);
+        if (coin != null)
+        {
+            if (ScoreParent != null) ScoreParent.DeleteCoin(coin);
+            else Destroy(coin);
+        } // Call the static method to handle coin collection
+        // RuntimeLog.Write("Coin reached target: " + coin);
         // Destroy(coin); // destroy the coin when it reaches the target
     }
 
 
+    void OnDisable()
+    {
+        StopAllCoroutines();
+        foreach (var coin in coins) if (coin != null) Destroy(coin);
+        coins.Clear();
+    }
+
+    void OnDestroy() { if (Instance == this) Instance = null; }
+
     // Convert the UI element’s screen position to world space (for Overlay / Screen‑space canvases)
     private Vector3 GetTargetWorldPos()
     {
-        Canvas canvas = scoreTarget.GetComponentInParent<Canvas>();
+        Canvas canvas = targetCanvas;
         if (canvas != null && canvas.renderMode != RenderMode.WorldSpace)
         {
             Vector3 screen = RectTransformUtility.WorldToScreenPoint(null, scoreTarget.transform.position);
-            Vector3 world = Camera.main.ScreenToWorldPoint(screen);
+            Vector3 world = sceneCamera.ScreenToWorldPoint(screen);
             world.z = 0f;                       // keep on 0 plane
             return world;
         }

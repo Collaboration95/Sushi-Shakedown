@@ -9,7 +9,7 @@ public class GameSceneManager : Singleton<GameSceneManager>
     {
         base.Awake();
 
-        Debug.Log("Displays is " + Display.displays.Length);
+        RuntimeLog.Write("Displays is " + Display.displays.Length);
         // e.g. ensure Display2 is activated, if you’re using multi-display:
         // if (Display.displays.Length > 1) Display.displays[1].Activate();
     }
@@ -19,7 +19,7 @@ public class GameSceneManager : Singleton<GameSceneManager>
         for (int i = 0; i < SceneManager.sceneCount; i++)
         {
             Scene scene = SceneManager.GetSceneAt(i);
-            Debug.Log($"Active scene: {scene.name}");
+            RuntimeLog.Write($"Active scene: {scene.name}");
         }
     }
 
@@ -28,7 +28,8 @@ public class GameSceneManager : Singleton<GameSceneManager>
     /// </summary>
     public void StartGame()
     {
-        // 1) Load Customers as the base scene (unloads MainMenu)
+        Time.timeScale = 1f;
+        // Load Customers as the base scene (unloads MainMenu)
         SceneManager.LoadScene("Customers", LoadSceneMode.Single);
 
         // 2) Immediately add KitchenScene on top
@@ -40,7 +41,7 @@ public class GameSceneManager : Singleton<GameSceneManager>
     /// </summary>
     public void LoadUpgrades()
     {
-        SceneManager.LoadScene("Upgrades", LoadSceneMode.Single);
+        Debug.LogWarning("Upgrades is an overlay in Customers; there is no Upgrades scene.", this);
     }
 
     /// <summary>
@@ -48,6 +49,7 @@ public class GameSceneManager : Singleton<GameSceneManager>
     /// </summary>
     public void BackToMainMenu()
     {
+        Time.timeScale = 1f;
         SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
     }
 

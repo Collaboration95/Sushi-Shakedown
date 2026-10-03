@@ -22,20 +22,22 @@ public class SettingsController : MonoBehaviour
 
     private void Start()
     {
-        gm = GameObject.Find("GuruAudioManager").GetComponent<GuruAudioManager>();
+        if (gm == null) gm = FindFirstObjectByType<GuruAudioManager>();
 
         CreateLocalCopy();
         CloseSettings();
     }
 
+    private void OnDestroy() { if (localCustomerData != null) Destroy(localCustomerData); }
+
     private void OnEnable()
     {
-        mainMenuManager.OnSettingsOpened += ShowSettings;
+        if (mainMenuManager != null) mainMenuManager.OnSettingsOpened += ShowSettings;
     }
 
     private void OnDisable()
     {
-        mainMenuManager.OnSettingsOpened -= ShowSettings;
+        if (mainMenuManager != null) mainMenuManager.OnSettingsOpened -= ShowSettings;
     }
 
     /// <summary>
@@ -49,7 +51,7 @@ public class SettingsController : MonoBehaviour
             Destroy(localCustomerData);
         }
         localCustomerData = Instantiate(customerData);
-        // Debug.Log($"Local copy created: {localCustomerData.gameMode}");
+        // RuntimeLog.Write($"Local copy created: {localCustomerData.gameMode}");
     }
 
     /// <summary>
@@ -102,7 +104,7 @@ public class SettingsController : MonoBehaviour
     public void Decline()
     {
         gm.PlayButtonClickSound();
-        Debug.Log("Settings Declined. Changes discarded.");
+        RuntimeLog.Write("Settings Declined. Changes discarded.");
         CloseSettings();
         Destroy(localCustomerData);
         localCustomerData = null;

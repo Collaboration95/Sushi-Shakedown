@@ -30,12 +30,14 @@ public class UpgradeManager : MonoBehaviour
 
     private void OnEnable()
     {
+        if (customerData == null) { Debug.LogError("UpgradeManager requires CustomerData.", this); enabled = false; return; }
         customerData.OnFAA_Increased += HandleFAAIncreased;
         customerData.OnGrillArea_Increased += HandleGrillAreaIncreased;
     }
 
     private void OnDisable()
     {
+        if (customerData == null) return;
         customerData.OnFAA_Increased -= HandleFAAIncreased;
         customerData.OnGrillArea_Increased -= HandleGrillAreaIncreased;
     }
@@ -44,8 +46,8 @@ public class UpgradeManager : MonoBehaviour
     {
         // set the initial visibility based on your SO's starting counts
         RefreshAllAreas();
-        Debug.Log("GrillCount is " + customerData.GrillAreaCount);
-        Debug.Log("FoodAssemblyCount is " + customerData.FoodAssemblyAreaCount);
+        RuntimeLog.Write("GrillCount is " + customerData.GrillAreaCount);
+        RuntimeLog.Write("FoodAssemblyCount is " + customerData.FoodAssemblyAreaCount);
     }
 
     /// <summary>
@@ -55,11 +57,11 @@ public class UpgradeManager : MonoBehaviour
     {
         int faCount = customerData.FoodAssemblyAreaCount;
         for (int i = 0; i < faAreas.Length; i++)
-            faAreas[i].SetActive(i < faCount);
+            if (faAreas[i] != null) faAreas[i].SetActive(i < faCount);
 
         int gaCount = customerData.GrillAreaCount;
         for (int i = 0; i < gaAreas.Length; i++)
-            gaAreas[i].SetActive(i < gaCount);
+            if (gaAreas[i] != null) gaAreas[i].SetActive(i < gaCount);
     }
 
     /// <summary>
@@ -69,7 +71,7 @@ public class UpgradeManager : MonoBehaviour
     private void HandleFAAIncreased(int newCount)
     {
         int idx = newCount - 1;         // counts are 1-based
-        if (idx >= 0 && idx < faAreas.Length)
+        if (idx >= 0 && idx < faAreas.Length && faAreas[idx] != null)
             faAreas[idx].SetActive(true);
     }
 
@@ -80,7 +82,7 @@ public class UpgradeManager : MonoBehaviour
     private void HandleGrillAreaIncreased(int newCount)
     {
         int idx = newCount - 1;
-        if (idx >= 0 && idx < gaAreas.Length)
+        if (idx >= 0 && idx < gaAreas.Length && gaAreas[idx] != null)
             gaAreas[idx].SetActive(true);
     }
 }

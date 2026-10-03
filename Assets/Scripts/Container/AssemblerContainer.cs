@@ -23,14 +23,14 @@ public class AssemblerContainer : BaseContainer
             //}
             if (!trackingHoveringDraggableObject.IsBeingDragged())
             {
-                Debug.Log($"{trackingHoveringDraggableObject.name} released in {gameObject.name}");
+                RuntimeLog.Write($"{trackingHoveringDraggableObject.name} released in {gameObject.name}");
 
                 if (GetOwnedDraggable() == null) //if container does not contain draggables
                 {
                     if (trackingHoveringDraggableObject.GetComponent<IngredientDraggable>() != null || trackingHoveringDraggableObject.GetComponent<PlateDraggable>() != null || trackingHoveringDraggableObject.GetComponent<CupDraggable>() != null) 
                     {
                         // It is an IngredientDraggable or a ServingDraggable
-                        Debug.Log($"{trackingHoveringDraggableObject.name} is a valid DraggableObject");
+                        RuntimeLog.Write($"{trackingHoveringDraggableObject.name} is a valid DraggableObject");
                         
                        
                         //Setting up object being placed on assemblycontainer

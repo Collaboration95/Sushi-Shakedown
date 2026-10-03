@@ -14,7 +14,7 @@ public class ScoreParent : MonoBehaviour
     public CustomerData CustomerData; // Reference to the CustomerData scriptable object
     void Start()
     {
-        cm = GameObject.Find("CustomerAudioManager").GetComponent<CustomerAudioManager>();
+        if (cm == null) cm = FindFirstObjectByType<CustomerAudioManager>();
         // Initialize the score text UI with the initial score
         UpdateScoreUI();
     }
@@ -27,9 +27,8 @@ public class ScoreParent : MonoBehaviour
 
     public void DeleteCoin(GameObject coin)
     {
-        HandleScore(1);
         Destroy(coin);
-        cm.PlayCoinsSound();
+        if (cm != null) cm.PlayCoinsSound();
     }
 
     public void ResetScore()
@@ -52,15 +51,19 @@ public class ScoreParent : MonoBehaviour
 
     public void UpdateScoreUI()
     {
-        scoreText.text = score.ToString(); // Update the UI text with the current score
+        if (scoreText != null) scoreText.text = score.ToString(); // Update the UI text with the current score
     }
     public void OnEnable()
     {
-        CustomerData.OnScoreChanged += HandleScoreChanged;
+        if (CustomerData != null)
+        {
+            CustomerData.OnScoreChanged += HandleScoreChanged;
+            SetScore(CustomerData.score);
+        }
     }
     public void OnDisable()
     {
-        CustomerData.OnScoreChanged -= HandleScoreChanged;
+        if (CustomerData != null) CustomerData.OnScoreChanged -= HandleScoreChanged;
     }
 
 
@@ -69,11 +72,6 @@ public class ScoreParent : MonoBehaviour
 
     public void HandleScoreChanged(int newScore)
     {
-        // Only update if the new score is greater than the current score
-        if (score > newScore)
-        {
-            score = newScore; // Update the local score variable
-            UpdateScoreUI(); // Refresh the UI to reflect the new score
-        }
+        SetScore(newScore);
     }
 }

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class DaySnapshot
@@ -24,6 +23,12 @@ public class DayManager : DebuggableMonoBehaviour
     protected override void OnEnable()
     {
         base.OnEnable(); // Call the base class 
+        if (waveManager == null || customerDataSO == null || OM == null)
+        {
+            Debug.LogError("DayManager requires WaveManager, CustomerData and Overlay.", this);
+            enabled = false;
+            return;
+        }
         waveManager.OnWavesCompleted += OnWavesCompleted;
         customerDataSO.OnGameModeChanged += OnModeChanged;
         OM.OnPreDayClosed += HandleStartWaves;
@@ -35,16 +40,20 @@ public class DayManager : DebuggableMonoBehaviour
     protected override void OnDisable()
     {
         base.OnDisable(); // Call the base class method to clean up logging
-        waveManager.OnWavesCompleted -= OnWavesCompleted;
-        customerDataSO.OnGameModeChanged -= OnModeChanged;
-        OM.OnPreDayClosed -= HandleStartWaves;
-        OM.OnInfoClosed -= OnInfoClosed;
+        if (waveManager != null) waveManager.OnWavesCompleted -= OnWavesCompleted;
+        if (customerDataSO != null) customerDataSO.OnGameModeChanged -= OnModeChanged;
+        if (OM != null)
+        {
+            OM.OnPreDayClosed -= HandleStartWaves;
+            OM.OnInfoClosed -= OnInfoClosed;
+        }
     }
     public void Start()
     {
-        ScoreParent = GameObject.Find("Score").GetComponent<ScoreParent>();
-        Debug.Log("DayManager: Start() called.");
-        Debug.Log("Day is " + customerDataSO.Day + " in Start() method.");
+        if (ScoreParent == null) ScoreParent = FindFirstObjectByType<ScoreParent>();
+        if (ScoreParent == null) { Debug.LogError("DayManager requires ScoreParent.", this); enabled = false; return; }
+        RuntimeLog.Write("DayManager: Start() called.");
+        RuntimeLog.Write("Day is " + customerDataSO.Day + " in Start() method.");
         StartDay();
         // OnModeChanged(customerDataSO.gameMode);
     }
@@ -57,11 +66,12 @@ public class DayManager : DebuggableMonoBehaviour
             return;
         }
 
-        Debug.Log($"--- Starting Day {customerDataSO.Day} ---");
+        RuntimeLog.Write($"--- Starting Day {customerDataSO.Day} ---");
         // reset daily stats
         customerDataSO.WaveCount = 0;
         customerDataSO.customersServed = 0;
         customerDataSO.score = customerDataSO.CustomerCoins;
+        customerDataSO.HappyCustomerCount = 0;
         customerDataSO.normalCustomersCount = 0;
         customerDataSO.angryCustomersCount = 0;
         ScoreParent.SetScore(customerDataSO.score);
@@ -77,7 +87,7 @@ public class DayManager : DebuggableMonoBehaviour
     {
         if (customerDataSO.Day > customerDataSO.maxDays)
         {
-            Debug.Log("Max days reached in HandleStartWaves — showing final UI.");
+            RuntimeLog.Write("Max days reached in HandleStartWaves — showing final UI.");
             OM.ShowFinalDayUI();
             return;
         }
@@ -90,7 +100,7 @@ public class DayManager : DebuggableMonoBehaviour
     {
         if (mode == GameMode.Waves)
         {
-            Debug.Log("Day is ." + customerDataSO.Day + " in Waves mode.");
+            RuntimeLog.Write("Day is ." + customerDataSO.Day + " in Waves mode.");
 
             waveManager.StopEndlessCustomers();
             waveManager.StartWaves();
@@ -121,7 +131,7 @@ public class DayManager : DebuggableMonoBehaviour
         }
         else
         {
-            Debug.Log("All days complete! Transition to endgame...");
+            RuntimeLog.Write("All days complete! Transition to endgame...");
 
             // TODO: show final results / return to menu / quit
         }
@@ -130,7 +140,7 @@ public class DayManager : DebuggableMonoBehaviour
 
     protected override void UpdateLogStatus()
     {
-        isDebugEnabled = logSettings.DayManagerLogs;
+        isDebugEnabled = logSettings != null && logSettings.DayManagerLogs;
     }
 
 
@@ -142,10 +152,10 @@ public class DayManager : DebuggableMonoBehaviour
         int EarnedCoins = customerDataSO.CustomerCoins;
 
         int YakuzaDeduction = customerDataSO.GetRansom(customerDataSO.Day);
-        Debug.Log($"Yakuza deduction for day {customerDataSO.Day} is {YakuzaDeduction} coins.");
+        RuntimeLog.Write($"Yakuza deduction for day {customerDataSO.Day} is {YakuzaDeduction} coins.");
         if (EarnedCoins < YakuzaDeduction)
         {
-            Debug.Log("Not enough coins to pay the Yakuza! Game over.");
+            RuntimeLog.Write("Not enough coins to pay the Yakuza! Game over.");
             OM.ShowFailureUI(customerDataSO.Day, EarnedCoins, YakuzaDeduction);
 
         }

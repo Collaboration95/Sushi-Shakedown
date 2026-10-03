@@ -35,7 +35,7 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
     {
         SetupToggleComponents();
 
-        _slider.value = sliderValue;
+        if (_slider != null) _slider.value = sliderValue;
     }
 
     private void SetupToggleComponents()
@@ -52,7 +52,7 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
 
         if (_slider == null)
         {
-            Debug.Log("No slider found!", this);
+            RuntimeLog.Write("No slider found!", this);
             return;
         }
 
@@ -88,9 +88,10 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
 
     public void SetStateSilently(bool state)
     {
+        SetupToggleComponents();
         _previousValue = CurrentValue;
         CurrentValue = state;
-        _slider.value = state ? 1f : 0f;
+        if (_slider != null) _slider.value = state ? 1f : 0f;
     }
 
 
@@ -115,7 +116,7 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
         if (_animateSliderCoroutine != null)
             StopCoroutine(_animateSliderCoroutine);
 
-        _animateSliderCoroutine = StartCoroutine(AnimateSlider());
+        if (_slider != null && isActiveAndEnabled) _animateSliderCoroutine = StartCoroutine(AnimateSlider());
     }
 
 

@@ -29,11 +29,11 @@ public class BaseContainer : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D other) //if collision detected
     {
-        if (other.GetComponent<DraggableObject>() != null && other.GetComponent<DraggableObject>().IsBeingDragged()) //check if other object is a draggableobject and its being dragged
+        if (other.TryGetComponent<DraggableObject>(out var draggable) && draggable.IsBeingDragged()) //check if other object is a draggableobject and its being dragged
         {
-            Debug.Log($"[{gameObject.name}] {other.name} entered {gameObject.name}.");
+            RuntimeLog.Write($"[{gameObject.name}] {other.name} entered {gameObject.name}.");
             //if other is draggableObject, track the hovering draggableObject by invoking SetHoveringDraggableObject 
-            SetHoveringDraggableObjectTracking(other.GetComponent<DraggableObject>());
+            SetHoveringDraggableObjectTracking(draggable);
  
         }
     }
@@ -43,7 +43,7 @@ public class BaseContainer : MonoBehaviour
         if (GetHoveringDraggableObjectTracking() != null && other.gameObject == GetHoveringDraggableObjectTracking().gameObject)
         {
             //if draggableInZone exist, reset to null to show no more draggable hovering in collider
-            Debug.Log($"[{gameObject.name}] {other.name} left {gameObject.name}.");
+            RuntimeLog.Write($"[{gameObject.name}] {other.name} left {gameObject.name}.");
             ClearHoveringDraggableObjectTracking();
         }
     }
@@ -60,7 +60,7 @@ public class BaseContainer : MonoBehaviour
         }
         else
         {
-            Debug.Log($"No Owned Draggables in {gameObject.name}");
+            RuntimeLog.Write($"No Owned Draggables in {gameObject.name}");
         }
     }
 

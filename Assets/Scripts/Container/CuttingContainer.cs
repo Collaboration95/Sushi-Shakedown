@@ -17,11 +17,13 @@ public class CuttingContainer : BaseContainer   //cutting board will inherit bas
 
     private void OnEnable()
     {
+        if (cs == null) { Debug.LogError("Cooking station requires CustomerData.", this); enabled = false; return; }
+        CuttingMultiplier = cs.CuttingSpeed;
         cs.OnCuttingSpeed_Increased += HandleCuttingSpeedIncreased;
     }
     private void OnDisable()
     {
-        cs.OnCuttingSpeed_Increased -= HandleCuttingSpeedIncreased;
+        if (cs != null) cs.OnCuttingSpeed_Increased -= HandleCuttingSpeedIncreased;
     }
 
     private void HandleCuttingSpeedIncreased(int newValue)
@@ -45,13 +47,13 @@ public class CuttingContainer : BaseContainer   //cutting board will inherit bas
 
             if (!trackingHoveringDraggableObject.IsBeingDragged())
             {
-                Debug.Log($"{trackingHoveringDraggableObject.name} released in {gameObject.name}");
+                RuntimeLog.Write($"{trackingHoveringDraggableObject.name} released in {gameObject.name}");
 
                 if (GetOwnedDraggable() == null) //if container does not contain draggables
                 {
-                    if (trackingHoveringDraggableObject.GetComponent<DraggableObject>() != null) //TODO NEED TO UPDATE
+                    if (HasRecipeWithInput(trackingHoveringDraggableObject.GetDraggableObjectSO())) //TODO NEED TO UPDATE
                     {
-                        Debug.Log($"{trackingHoveringDraggableObject.name} is a valid IngredientDraggable");
+                        RuntimeLog.Write($"{trackingHoveringDraggableObject.name} is a valid IngredientDraggable");
 
                         //set draggable object parent container to this
                         //set ownedDraggable to this draggableObject
@@ -71,6 +73,11 @@ public class CuttingContainer : BaseContainer   //cutting board will inherit bas
                         EventManager.Instance.Trigger("updateProgressUI", new ProgressBarUpdateData(cuttingProgressUI, 0f));
                         EventManager.Instance.Trigger("showProgressUI", cuttingProgressUI);
 
+                    }
+                    else
+                    {
+                        trackingHoveringDraggableObject.ReturnToParentContainer();
+                        ClearHoveringDraggableObjectTracking();
                     }
                 }
                 else //container contains draggables
@@ -109,19 +116,19 @@ public class CuttingContainer : BaseContainer   //cutting board will inherit bas
         }
         else
         {
-            Debug.Log($"No Owned Draggables in {gameObject.name}");
+            RuntimeLog.Write($"No Owned Draggables in {gameObject.name}");
         }
     }
 
     public void HandleRightClick()
     {
-        Debug.Log("Cutting board triggered");
+        RuntimeLog.Write("Cutting board triggered");
         //check cutting board has ingredient and valid to cut
         if (GetOwnedDraggable() && HasRecipeWithInput(GetOwnedDraggable().GetDraggableObjectSO()))
         {
             cuttingProgress += CuttingMultiplier;
             CuttingRecipeSO cuttingRecipeSO = GetCuttingRecipeSOWithInput(GetOwnedDraggable().GetDraggableObjectSO());
-            Debug.Log($"cutting progress: {cuttingProgress}");
+            RuntimeLog.Write($"cutting progress: {cuttingProgress}");
             //audio
             EventManager.Instance.Trigger<object>("ObjectCutAudio", this);
 
@@ -136,7 +143,7 @@ public class CuttingContainer : BaseContainer   //cutting board will inherit bas
                 Transform newFood = Instantiate(outputDraggableObjectSO.prefab);
                 GameObject outputFood = newFood.gameObject;
                 DraggableObject draggable = outputFood.GetComponent<DraggableObject>();
-                Debug.Log("NEW FOOD SPAWNED");
+                RuntimeLog.Write("NEW FOOD SPAWNED");
 
 
                 SetOwnedDraggable(draggable);
@@ -154,9 +161,13 @@ public class CuttingContainer : BaseContainer   //cutting board will inherit bas
     {
         //check if inputFoodObjectSO exist in any of the CuttingRecipeSOArr inputs
 
+        if (cuttingRecipeSOArray == null || inputDraggableObjectSO == null) return null;
         foreach (CuttingRecipeSO cuttingRecipeSO in cuttingRecipeSOArray)
         {
-            if (cuttingRecipeSO.inputIngredient == inputDraggableObjectSO)
+            if (cuttingRecipeSO != null && cuttingRecipeSO.inputIngredient == inputDraggableObjectSO &&
+                cuttingRecipeSO.cuttingProgressMax > 0 && cuttingRecipeSO.outputIngredient != null &&
+                cuttingRecipeSO.outputIngredient.prefab != null &&
+                cuttingRecipeSO.outputIngredient.prefab.GetComponent<DraggableObject>() != null)
             {
                 return cuttingRecipeSO;
             }

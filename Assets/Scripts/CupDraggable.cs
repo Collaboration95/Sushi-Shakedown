@@ -14,21 +14,19 @@ public class CupDraggable : DraggableObject
 
     private void Awake()
     {
-        Debug.Log("CupDraggable Start() called. OOOOOOOOOGA ");
-        drinkSpriteArray.Add(bottomDrinkSprite);
-        drinkSpriteArray.Add(middleDrinkSprite);
-        drinkSpriteArray.Add(topDrinkSprite);
-        Debug.Log($"DrinkSpriteArray count: {drinkSpriteArray.Count}");
+        // Serialized lists may already contain entries; never append duplicate visual slots.
+        drinkSpriteArray = new List<SpriteRenderer>(3) { bottomDrinkSprite, middleDrinkSprite, topDrinkSprite };
 
     }
 
     public bool TryHandleIngredient(DraggableObject draggableObject)
     {
+        if (draggableObject == null) return false;
         DraggableObjectSO incomingSO = draggableObject.GetDraggableObjectSO();
         CupIngredientSO ingredientInfo = GetCupIngredientSO(incomingSO);
         if (ingredientInfo == null)
         {
-            Debug.LogWarning("Ingredient not valid for this plate.");
+            RuntimeLog.Write("Ingredient is not accepted by this dish.");
             return false;
         }
 
@@ -39,12 +37,12 @@ public class CupDraggable : DraggableObject
         {
             currentIngredients.Add(incomingSO);
             EventManager.Instance.Trigger<object>("AddCupIngredientAudio", this);
-            Debug.Log($"Added {ingredientInfo.ingredientType} ({incomingSO.name}) to cup.");
+            RuntimeLog.Write($"Added {ingredientInfo.ingredientType} ({incomingSO.name}) to cup.");
             UpdateDrinkSprites();
             return true;
         }
 
-        Debug.Log("Cup already has maximum ingredients.");
+        RuntimeLog.Write("Cup already has maximum ingredients.");
         return false;
     }
 
@@ -66,9 +64,10 @@ public class CupDraggable : DraggableObject
     }
     private CupIngredientSO GetCupIngredientSO(DraggableObjectSO inputSO)
     {
+        if (cupIngredientSOArray == null || inputSO == null) return null;
         foreach (var cupIngredientSO in cupIngredientSOArray)
         {
-            if (cupIngredientSO.draggableObjectSO == inputSO)
+            if (cupIngredientSO != null && cupIngredientSO.draggableObjectSO == inputSO)
                 return cupIngredientSO;
         }
         return null;

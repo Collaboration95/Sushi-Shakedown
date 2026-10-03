@@ -1,0 +1,13 @@
+{
+  "name": "SushiShakedown.EditModeTests",
+  "references": [
+    "SushiShakedown.Runtime",
+    "Unity.ugui"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ]
+}

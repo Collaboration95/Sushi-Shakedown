@@ -30,13 +30,13 @@ public class IngredientDispenserContainer : BaseContainer
             //}
             if (!trackingHoveringDraggableObject.IsBeingDragged())
             {
-                Debug.Log($"{trackingHoveringDraggableObject.name} released in {gameObject.name}");
+                RuntimeLog.Write($"{trackingHoveringDraggableObject.name} released in {gameObject.name}");
 
                 if (GetOwnedDraggable() == null) //if container does not contain draggables
                 {
                     if (trackingHoveringDraggableObject.GetComponent<DraggableObject>() != null) //TODO NEED TO UPDATE
                     {
-                        Debug.Log($"{trackingHoveringDraggableObject.name} is a valid IngredientDraggable");
+                        RuntimeLog.Write($"{trackingHoveringDraggableObject.name} is a valid IngredientDraggable");
 
                         //set draggable object parent container to this
                         //set ownedDraggable to this draggableObject

@@ -8,10 +8,10 @@ public class GameManagerClickTester : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             // Ignore clicks that are currently over a UI element
-            if (EventSystem.current.IsPointerOverGameObject())
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
                 return;
 
-            Debug.Log("[GameManager]  World click detected");
+            RuntimeLog.Write("[GameManager]  World click detected");
         }
     }
 }

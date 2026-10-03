@@ -10,6 +10,6 @@ public class Food : MonoBehaviour
     public String foodName;
 
 
-    public List<DraggableObjectSO> ingredientsDraggableObjectSOArray;
+    public List<DraggableObjectSO> ingredientsDraggableObjectSOArray = new List<DraggableObjectSO>(3);
 
 }

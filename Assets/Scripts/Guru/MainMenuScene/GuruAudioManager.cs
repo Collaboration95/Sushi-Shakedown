@@ -38,7 +38,7 @@ public class GuruAudioManager : MonoBehaviour
     void Start()
     {
 
-        Debug.Log("Starting Main Menu…");
+        RuntimeLog.Write("Starting Main Menu…");
         PlayRandomMusic();
     }
 
@@ -54,7 +54,7 @@ public class GuruAudioManager : MonoBehaviour
         BackgroundMusicSource.loop = true;
         BackgroundMusicSource.Play();
 
-        Debug.Log($"Now playing: {chosen.name}");
+        RuntimeLog.Write($"Now playing: {chosen.name}");
 
         // unload all other clips to free memory
         for (int i = 0; i < musicClips.Length; i++)
@@ -69,11 +69,11 @@ public class GuruAudioManager : MonoBehaviour
 
     public void PlayButtonClickSound()
     {
-        Debug.Log("Button click sound played.");
+        RuntimeLog.Write("Button click sound played.");
         if (SFXSource != null && ButtonClickClip != null)
         {
             SFXSource.PlayOneShot(ButtonClickClip);
-            Debug.Log("Button click sound played.");
+            RuntimeLog.Write("Button click sound played.");
 
         }
     }
