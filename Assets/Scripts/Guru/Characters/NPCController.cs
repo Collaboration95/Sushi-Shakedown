@@ -5,6 +5,7 @@ public class NPCController : MonoBehaviour
     public float speed = 3f;
     private Vector2 moveDirection = Vector2.right; // Default movement direction.
     private SpriteRenderer spriteRenderer;
+    private Camera sceneCamera;
 
     [Tooltip("Sprite scale at the closest spawn Y")]
     private readonly float minScale = 0.6f;
@@ -20,21 +21,24 @@ public class NPCController : MonoBehaviour
 
     void Awake()
     {
-        // Debug.Log($"[NPCController] {gameObject.name} initialized.");
+        // RuntimeLog.Write($"[NPCController] {gameObject.name} initialized.");
         spriteRenderer = GetComponent<SpriteRenderer>();
+        sceneCamera = Camera.main;
         if (spriteRenderer == null)
         {
-            Debug.Log("NPCController: No SpriteRenderer found!");
+            RuntimeLog.Write("NPCController: No SpriteRenderer found!");
         }
         speed = Random.Range(.7f, 1.0f) * speed;
         if (customerAnimator == null)
             customerAnimator = GetComponent<Animator>();
 
         // 2) stash the base controller that's currently assigned
-        originalController = customerAnimator.runtimeAnimatorController;
-
-        int t = Random.Range(0, overrideControllers.Count);  // 50/50 chance
-        customerAnimator.runtimeAnimatorController = overrideControllers[t];
+        if (customerAnimator != null && overrideControllers != null && overrideControllers.Count > 0)
+        {
+            originalController = customerAnimator.runtimeAnimatorController;
+            int t = Random.Range(0, overrideControllers.Count);
+            if (overrideControllers[t] != null) customerAnimator.runtimeAnimatorController = overrideControllers[t];
+        }
 
     }
 
@@ -48,7 +52,7 @@ public class NPCController : MonoBehaviour
         }
         else
         {
-            Debug.Log("NPCController: No SpriteRenderer found, cannot flip sprite.");
+            RuntimeLog.Write("NPCController: No SpriteRenderer found, cannot flip sprite.");
         }
     }
 
@@ -58,7 +62,8 @@ public class NPCController : MonoBehaviour
         transform.Translate(speed * Time.deltaTime * moveDirection);
 
         // Check if the NPC has moved off screen.
-        Camera cam = Camera.main;
+        Camera cam = sceneCamera;
+        if (cam == null) return;
         Vector3 viewportPos = cam.WorldToViewportPoint(transform.position);
         // If NPC goes far off-screen (x < -0.1 or > 1.1), destroy it.
         if (viewportPos.x < -0.1f || viewportPos.x > 1.1f)
@@ -82,7 +87,7 @@ public class NPCController : MonoBehaviour
     {
         // 1) Movement direction & sprite flip
         moveDirection = new Vector2(direction, 0f);
-        spriteRenderer.flipX = direction < 0;
+        if (spriteRenderer != null) spriteRenderer.flipX = direction < 0;
 
         // 2) Depth‐based scale
         float t = Mathf.InverseLerp(minY, maxY, spawnY);
@@ -91,12 +96,12 @@ public class NPCController : MonoBehaviour
 
         // 3) Align bottom of sprite to spawnY
         AlignBottomToY(spawnY);
-        customerAnimator.SetBool("isWalking", true);
+        if (customerAnimator != null) customerAnimator.SetBool("isWalking", true);
     }
 
     public void AlignBottomToY(float spawnY)
     {
-        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        SpriteRenderer sr = spriteRenderer;
         if (sr != null)
         {
             // Calculate the sprite's height in world units.
@@ -110,7 +115,7 @@ public class NPCController : MonoBehaviour
         }
         else
         {
-            Debug.Log("NPCController: No SpriteRenderer found, cannot adjust spawn Y.");
+            RuntimeLog.Write("NPCController: No SpriteRenderer found, cannot adjust spawn Y.");
         }
     }
 

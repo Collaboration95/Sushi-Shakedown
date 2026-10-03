@@ -42,6 +42,7 @@ public class BaseContainerVisual : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (EventManager.Instance == null) return;
         // Always unsubscribe on destroy to prevent memory leaks
         EventManager.Instance.Unsubscribe<BaseContainer>("baseContainerSelectedVisual", OnBaseContainerSelectedVisual);
         EventManager.Instance.Unsubscribe<BaseContainer>("baseContainerDeselectedVisual", OnBaseContainerDeselectedVisual);

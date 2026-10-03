@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6cffed7b9b1246f59718a629b77eac0, type: 3}
   m_Name: LogSettings
   m_EditorClassIdentifier: 
-  CustomerControllerLogs: 1
-  DayManagerLogs: 1
+  CustomerControllerLogs: 0
+  DayManagerLogs: 0
   OrderBubbleLogs: 0
   PatienceBarLogs: 0
-  WaveManagerLogs: 1
+  WaveManagerLogs: 0
   NPCControllerLogs: 0
-  NPCSpawnerLogs: 1
+  NPCSpawnerLogs: 0
   FoodManagerLogs: 0
   FoodSpawnerLogs: 0
-  OverLayManagerLogs: 1
+  OverLayManagerLogs: 0

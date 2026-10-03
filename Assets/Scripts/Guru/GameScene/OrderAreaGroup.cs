@@ -18,7 +18,7 @@ public class OrderAreaGroup : MonoBehaviour
     {
         foreach (var area in orderAreas)
         {
-            if (area.IsFree())
+            if (area != null && area.IsFree())
             {
                 // Mark the area as occupied.
                 area.UpdateState(true);
@@ -32,29 +32,10 @@ public class OrderAreaGroup : MonoBehaviour
 
     public void BootAllCustomers()
     {
-        foreach (var area in orderAreas)
-        {
-            // find any “Customer” colliders at this area’s position
-            Vector2 pos = area.GetCoordinates();
-            Collider2D[] hits = Physics2D.OverlapPointAll(pos);
-
-            foreach (var hit in hits)
-            {
-                if (hit.GetComponent<CustomerController>() != null)
-                {
-                    // if the collider is a customer, boot them out
-                    hit.GetComponent<CustomerController>().ForceTimeout();
-                }
-                // {
-                //     var ctrl = hit.GetComponent<CustomerController>();
-                //     if (ctrl != null)
-                //         ctrl.ForceTimeout();    // see addition below
-                // }
-            }
-
-            // free up the spot
-            area.UpdateState(false);
-        }
+        // Include customers still walking to their reserved slot, not just colliders at the counter.
+        foreach (var customer in FindObjectsByType<CustomerController>(FindObjectsSortMode.None))
+            if (customer.assignedOrderArea != null && orderAreas.Contains(customer.assignedOrderArea)) customer.ForceTimeout();
+        foreach (var area in orderAreas) if (area != null) area.UpdateState(false);
     }
 
     public void ReleaseOrderArea(OrderArea area)
@@ -68,19 +49,19 @@ public class OrderAreaGroup : MonoBehaviour
     public void PrintAllOrderArea()
     {
 
-        Debug.Log(string.Join(" | ", orderAreas.Select(area => $"Order Area: {area.name}, Free: {(area.IsFree() ? 1 : 0)}")));
+        RuntimeLog.Write(string.Join(" | ", orderAreas.Select(area => $"Order Area: {area.name}, Free: {(area.IsFree() ? 1 : 0)}")));
 
     }
 
     void Start()
     {
-        Debug.Log(string.Join(" | ", orderAreas.Select(area => $"Order Area: {area.name}, Free: {(area.IsFree() ? 1 : 0)}")));
+        RuntimeLog.Write(string.Join(" | ", orderAreas.Select(area => $"Order Area: {area.name}, Free: {(area.IsFree() ? 1 : 0)}")));
 
     }
     public bool AreAllOrderAreasFree()
     {
         // PrintAllOrderArea(); // Print all order areas for debugging.
-        return orderAreas.All(area => area.IsFree());
+        return orderAreas.All(area => area == null || area.IsFree());
 
     }
 }

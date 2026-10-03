@@ -12,9 +12,14 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
         }
     }
 
+    protected virtual void OnDestroy()
+    {
+        if (_instance == this as T) _instance = null;
+    }
+
     public virtual void Awake()
     {
-        Debug.Log("Singleton Awake called");
+        RuntimeLog.Write("Singleton Awake called");
 
         if (_instance == null)
         {

@@ -18,6 +18,8 @@ public class EventManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    void OnDestroy() { if (Instance == this) { _eventTable.Clear(); Instance = null; } }
+
     // 0-ARG SUBSCRIBE
     public void Subscribe(string eventName, Action listener)
     {

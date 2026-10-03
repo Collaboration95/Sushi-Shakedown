@@ -1,0 +1,8 @@
+{
+  "name": "SushiShakedown.Runtime",
+  "references": [
+    "Unity.ugui",
+    "Unity.TextMeshPro"
+  ],
+  "autoReferenced": true
+}

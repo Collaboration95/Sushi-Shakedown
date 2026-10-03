@@ -16,25 +16,27 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnPlayButtonClicked()
     {
-        gm.PlayButtonClickSound();
-        Debug.Log("Play button clicked! Loading Game scene...");
-        EventSystem.current.SetSelectedGameObject(null);
-        GameSceneManager.instance.StartGame();
+        if (gm != null) gm.PlayButtonClickSound();
+        RuntimeLog.Write("Play button clicked! Loading Game scene...");
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+        var settings = FindFirstObjectByType<SettingsController>();
+        if (settings != null && settings.customerData != null) settings.customerData.ResetEverything();
+        if (GameSceneManager.instance != null) GameSceneManager.instance.StartGame();
     }
 
     public void OnSettingsButtonClicked()
     {
-        gm.PlayButtonClickSound();
-        Debug.Log("Settings button clicked! Opening Settings...");
-        EventSystem.current.SetSelectedGameObject(null);
+        if (gm != null) gm.PlayButtonClickSound();
+        RuntimeLog.Write("Settings button clicked! Opening Settings...");
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
         OnSettingsOpened?.Invoke();
     }
 
     public void OnExitButtonClicked()
     {
-        gm.PlayButtonClickSound();
-        Debug.Log("Exit button clicked! Quitting...");
-        EventSystem.current.SetSelectedGameObject(null);
+        if (gm != null) gm.PlayButtonClickSound();
+        RuntimeLog.Write("Exit button clicked! Quitting...");
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
 
 #if UNITY_EDITOR
         EditorApplication.isPlaying = false;

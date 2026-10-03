@@ -5,7 +5,6 @@ using UnityEngine.EventSystems;
 
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using Unity.VisualScripting; // for loading scenes
 
 public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
 {
@@ -99,11 +98,13 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     protected override void Awake()
     {
         base.Awake();
-    }
-
-    void Start()
-    {
-        cm = GameObject.Find("CustomerAudioManager").GetComponent<CustomerAudioManager>();
+        if (cm == null) cm = FindFirstObjectByType<CustomerAudioManager>();
+        if (cm == null || customerData == null)
+        {
+            Debug.LogError("Overlay requires CustomerAudioManager and CustomerData.", this);
+            enabled = false;
+            return;
+        }
         // Initialize the UI to show the game screen by default
         DefaultView();
     }
@@ -116,13 +117,15 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
 
     protected override void UpdateLogStatus()
     {
-        isDebugEnabled = logSettings.OverLayManagerLogs;
+        isDebugEnabled = logSettings != null && logSettings.OverLayManagerLogs;
     }
 
     protected override void OnDisable()
     {
         base.OnDisable();
-        // customerData.OnGameModeChanged -= HandleModeChanged;
+        Time.timeScale = 1f;
+        BlockUI(false);
+        if (Pause_CustomerData_Local != null) Destroy(Pause_CustomerData_Local);
     }
 
     public void PauseButtonClick()
@@ -156,10 +159,10 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
 
         bool isWaves = Pause_CustomerData_Local.gameMode == GameMode.Waves;
 
-        GameMode_Toggle.CurrentValue = isWaves;
+        GameMode_Toggle.SetStateSilently(isWaves);
 
-        bool isEasy = Pause_CustomerData_Local.difficulty == Difficulty.Easy;
-        DifficultyMode_Toggle.CurrentValue = isEasy;
+        bool isHard = Pause_CustomerData_Local.difficulty == Difficulty.Hard;
+        DifficultyMode_Toggle.SetStateSilently(isHard);
     }
 
     public void Accept()
@@ -222,7 +225,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
         cm.TransitionToDimmedSnapshot();
         HideAllScreens();
         Info_Screen.SetActive(true);
-        Debug.Log($"[Overlay] ShowInfoUI: day={day}, score={score}, served={totalServed}, happy={happy}, angry={angry} , TotalCoins={TotalCoins}");
+        RuntimeLog.Write($"[Overlay] ShowInfoUI: day={day}, score={score}, served={totalServed}, happy={happy}, angry={angry} , TotalCoins={TotalCoins}");
         Info_DayText.text = $"Day: {day} Completed!";
         Info_ScoreText.text = $"{TotalCoins + Ransom}";
         Info_RansomText.text = $"{Ransom}";
@@ -237,7 +240,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     {
 
         cm.TransitionToGameplaySnapshot();
-        Debug.Log("[Settings]  CloseInfoUI called");
+        RuntimeLog.Write("[Settings]  CloseInfoUI called");
         DefaultView();
         OnInfoClosed?.Invoke();
     }
@@ -246,7 +249,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     public void Info_UpgradeMenu_ButtonClick()
     {
         cm.PlayButtonClickSound();
-        Debug.Log("[Settings]  Upgrade Menu Button Clicked");
+        RuntimeLog.Write("[Settings]  Upgrade Menu Button Clicked");
         HideAllScreens();
         ShowUpgradeScreen();
     }
@@ -261,7 +264,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     {
         BlockUI(true); // Block UI interactions
         cm.TransitionToDimmedSnapshot();
-        // Debug.Log($"[Overlay] ShowPreDayUI: starting day {day}");
+        // RuntimeLog.Write($"[Overlay] ShowPreDayUI: starting day {day}");
         PreDay_DayText.text = $"Day {day} Starting";
         PreDay_ScoreText.text = $"Make {customerData.GetRansom(day)} COINS OR ELSE!";
         PreDay_HiddenStashText.text = $"Hidden Stash: {customerData.getCustomerCoins()} COINS";
@@ -272,7 +275,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     {
 
         cm.TransitionToGameplaySnapshot();
-        Debug.Log("[Settings]  ClosePreDayUI called");
+        RuntimeLog.Write("[Settings]  ClosePreDayUI called");
         DefaultView();
         OnPreDayClosed?.Invoke();
     }
@@ -282,13 +285,13 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
         cm.TransitionToDimmedSnapshot();
         HideAllScreens();
         Final_Day_Screen.SetActive(true);
-        // Debug.Log($"[Overlay] ShowFinalDayUI: starting day {customerData.Day}");
+        // RuntimeLog.Write($"[Overlay] ShowFinalDayUI: starting day {customerData.Day}");
     }
 
     public void FinalDayScreen_ExitButtonClick()
     {
         cm.PlayButtonClickSound();
-        Debug.Log("[Overlay] Exit Game");
+        RuntimeLog.Write("[Overlay] Exit Game");
         Application.Quit();
         // (in the Editor this won’t do anything, but in a build it will quit)
     }
@@ -299,7 +302,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     {
         cm.TransitionToGameplaySnapshot();
         cm.PlayButtonClickSound();
-        Debug.Log("[Overlay] Restart Game");
+        RuntimeLog.Write("[Overlay] Restart Game");
         customerData.ResetEverything();
         GameSceneManager.instance.BackToMainMenu();
     }
@@ -318,7 +321,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     public void Failure_QuitButtonClick()
     {
         cm.PlayButtonClickSound();
-        Debug.Log("[Overlay] Exit Game");
+        RuntimeLog.Write("[Overlay] Exit Game");
         Application.Quit();
         // (in the Editor this won’t do anything, but in a build it will quit)
     }
@@ -329,7 +332,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     {
         cm.TransitionToGameplaySnapshot();
         cm.PlayButtonClickSound();
-        Debug.Log("[Overlay] Restart Game");
+        RuntimeLog.Write("[Overlay] Restart Game");
         customerData.ResetEverything();
         GameSceneManager.instance.BackToMainMenu();
     }
@@ -338,7 +341,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     public void CloseFailureUI()
     {
 
-        Debug.Log("[Settings]  CloseFailureUI called");
+        RuntimeLog.Write("[Settings]  CloseFailureUI called");
         DefaultView();
     }
 
@@ -346,7 +349,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     public void OnPointerClick(PointerEventData eventData)
 
     {
-        Debug.Log("[Settings]  Settings UI received click");
+        RuntimeLog.Write("[Settings]  Settings UI received click");
     }
 
     public void HideAllScreens()
@@ -374,7 +377,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
     public void CloseUpgradeScreen()
     {
         cm.TransitionToGameplaySnapshot();
-        Debug.Log("[Settings]  CloseUpgradeScreen called");
+        RuntimeLog.Write("[Settings]  CloseUpgradeScreen called");
         DefaultView();
         OnInfoClosed?.Invoke();
     }
@@ -393,12 +396,12 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
             }
             else
             {
-                Debug.Log("Not enough coins to upgrade Food Assembly Area Count!");
+                RuntimeLog.Write("Not enough coins to upgrade Food Assembly Area Count!");
             }
         }
         else
         {
-            Debug.Log("Max Food Assembly Area Count reached!");
+            RuntimeLog.Write("Max Food Assembly Area Count reached!");
         }
     }
 
@@ -416,12 +419,12 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
             }
             else
             {
-                Debug.Log("Not enough coins to upgrade Cutting Speed!");
+                RuntimeLog.Write("Not enough coins to upgrade Cutting Speed!");
             }
         }
         else
         {
-            Debug.Log("Max Cutting Speed reached!");
+            RuntimeLog.Write("Max Cutting Speed reached!");
         }
     }
 
@@ -441,12 +444,12 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
             }
             else
             {
-                Debug.Log("Not enough coins to upgrade Grill Assembly Area Count!");
+                RuntimeLog.Write("Not enough coins to upgrade Grill Assembly Area Count!");
             }
         }
         else
         {
-            Debug.Log("Max Grill Assembly Count reached!");
+            RuntimeLog.Write("Max Grill Assembly Count reached!");
         }
     }
 
@@ -475,7 +478,7 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
         }
 
         Upgrade_GrillSpeed.text = $"{customerData.GrillSpeedCount}";
-        if (customerData.GrillSpeedCount < FoodAssemblyLevelMaxCount)
+        if (customerData.GrillSpeedCount < GrillMaxSpeedCount)
         {
             Upgrade_GrillSpeedCost.text = $"{GetGrillSpeedUpgradeCost()}";
         }
@@ -520,12 +523,12 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
             }
             else
             {
-                Debug.Log("Not enough coins to upgrade GrillSpeed Area Count!");
+                RuntimeLog.Write("Not enough coins to upgrade GrillSpeed Area Count!");
             }
         }
         else
         {
-            Debug.Log("Max GrillSpeed Count reached!");
+            RuntimeLog.Write("Max GrillSpeed Count reached!");
         }
     }
 
@@ -544,12 +547,12 @@ public class OverLayManager : DebuggableMonoBehaviour, IPointerClickHandler
             }
             else
             {
-                Debug.Log("Not enough coins to upgrade  Customer Patience Count!");
+                RuntimeLog.Write("Not enough coins to upgrade  Customer Patience Count!");
             }
         }
         else
         {
-            Debug.Log("Max Customer Patience!");
+            RuntimeLog.Write("Max Customer Patience!");
         }
     }
 

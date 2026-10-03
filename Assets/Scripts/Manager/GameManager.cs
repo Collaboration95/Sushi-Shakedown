@@ -33,13 +33,16 @@ public class GameManager : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         mainCamera = Camera.main;
-        if (mainCamera == null)
-            Debug.LogError("MainCamera not found after scene load!");
+        currentlyDragging = null;
+        uiIsBlockingInput = false;
+        // Customers Start will publish its initial overlay state after sceneLoaded.
+
     }
 
 
     private void OnDestroy()
     {
+        if (Instance == this) Instance = null;
         SceneManager.sceneLoaded -= OnSceneLoaded;
         OverLayManager.OnUIBlockToggle -= OnUIBlockToggle;
     }
@@ -64,14 +67,14 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.Log($"GameManager: CameraCheck grabbed camera → {mainCamera.name}");
+            RuntimeLog.Write($"GameManager: CameraCheck grabbed camera → {mainCamera.name}");
         }
     }
 
     // Update is called once per frame
     void Update()
     {
-        //always keep mouse position updated
+        if (mainCamera == null || gameDataSO == null) return;
         UpdateGameDataSOMousePosition();
         //if left mouse button down
         if (Input.GetMouseButtonUp(0))
@@ -82,7 +85,6 @@ public class GameManager : MonoBehaviour
 
         if (uiIsBlockingInput)
         {
-            Debug.Log("RUn for your livese , UI is being blocked");
             return;
         }
 
@@ -102,7 +104,7 @@ public class GameManager : MonoBehaviour
     private void HandleRightMouseDown()
     {
 
-        Debug.Log("HandleRightMouseDown Triggered");
+        RuntimeLog.Write("HandleRightMouseDown Triggered");
         //first execute a raycast hit
         RaycastHit2D[] hits = Physics2D.RaycastAll(gameDataSO.mousePosition, Vector2.zero, Mathf.Infinity, gameDataSO.interactableLayers);
         CuttingContainer cuttingBoard = null;
@@ -133,7 +135,7 @@ public class GameManager : MonoBehaviour
 
     private void HandleLeftMouseDown()
     {
-        Debug.Log("HandleLeftMouseDown Triggered");
+        RuntimeLog.Write("HandleLeftMouseDown Triggered");
         //first execute a raycast hit
         RaycastHit2D[] hits = Physics2D.RaycastAll(gameDataSO.mousePosition, Vector2.zero, Mathf.Infinity, gameDataSO.interactableLayers);
         BaseContainer baseContainer = null;
@@ -142,7 +144,7 @@ public class GameManager : MonoBehaviour
         AssemblerContainer assemblerContainer = null;
         //foreach (var hit in hits)
         //{
-        //    Debug.Log($"Hit object: {hit.collider.gameObject.name}, Layer: {hit.collider.gameObject.layer}");
+        //    RuntimeLog.Write($"Hit object: {hit.collider.gameObject.name}, Layer: {hit.collider.gameObject.layer}");
         //}
         foreach (RaycastHit2D hit in hits)
         {

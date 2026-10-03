@@ -16,6 +16,7 @@ public class ProgressBarUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (EventManager.Instance == null) return;
         // Always unsubscribe to prevent memory leaks
         EventManager.Instance.Unsubscribe<ProgressBarUpdateData>("updateProgressUI", OnUpdateProgressUI);
         EventManager.Instance.Unsubscribe<GameObject>("showProgressUI", OnShowUI);
@@ -47,10 +48,10 @@ public class ProgressBarUI : MonoBehaviour
     }
 }
 
-public class ProgressBarUpdateData
+public readonly struct ProgressBarUpdateData
 {
-    public GameObject target;
-    public float normalizedValue;
+    public readonly GameObject target;
+    public readonly float normalizedValue;
 
     public ProgressBarUpdateData(GameObject target, float normalizedValue)
     {

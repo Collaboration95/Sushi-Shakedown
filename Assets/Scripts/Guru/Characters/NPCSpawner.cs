@@ -12,6 +12,8 @@ public class NPCSpawner : MonoBehaviour
     public float spawnMargin = 1.0f;
 
     private float timer;
+    private Camera sceneCamera;
+    void Awake() => sceneCamera = Camera.main;
 
     public SpawnZoneData spawnZone;
 
@@ -42,8 +44,10 @@ public class NPCSpawner : MonoBehaviour
     }
     void SpawnNPC()
     {
+        if (sceneCamera == null || spawnZone == null || npcTemplate == null ||
+            npcTemplate.GetComponent<NPCController>() == null) return;
         bool fromLeft = Random.value > 0.5f;
-        Camera cam = Camera.main;
+        Camera cam = sceneCamera;
         float height = 2f * cam.orthographicSize;
         float width = height * cam.aspect;
 
@@ -64,17 +68,23 @@ public class NPCSpawner : MonoBehaviour
 
     public bool SpawnCustomer()
     {
-        // orderAreaGroup.PrintAllOrderArea(); // Print all order areas for debugging.
+        // Reservation occurs only after template/dependency validation.
+        if (sceneCamera == null || spawnZone == null || orderAreaGroup == null ||
+            customerTemplate == null || customerTemplate.GetComponent<CustomerController>() == null)
+        {
+            Debug.LogError("NPCSpawner requires a camera, spawn zone, order areas and a CustomerController template.", this);
+            return false;
+        }
         OrderArea orderArea = orderAreaGroup.GetFreeOrderArea();
-        // orderAreaGroup.PrintAllOrderArea(); // Print all order areas for debugging.
-        // Debug.Log("Spawn Customer is being called.");
+        // Reservation occurs only after template/dependency validation.
+        // RuntimeLog.Write("Spawn Customer is being called.");
         if (orderArea == null)
         {
-            Debug.Log("All order areas are occupied. Customer Not Spawned !!");
+            RuntimeLog.Write("All order areas are occupied. Customer Not Spawned !!");
             return false;
         }
         bool spawnFromLeft = Random.value > 0.5f;
-        Camera cam = Camera.main;
+        Camera cam = sceneCamera;
         float camHeight = 2f * cam.orthographicSize;
         float camWidth = camHeight * cam.aspect;
 
@@ -93,11 +103,13 @@ public class NPCSpawner : MonoBehaviour
         Vector3 spawnPosition = new Vector3(spawnX, spawnY, 0f);
         GameObject customer = Instantiate(customerTemplate, spawnPosition, Quaternion.identity);
         customer.SetActive(true);
-        if (customer.TryGetComponent<CustomerController>(out var customerController))
+        if (!customer.TryGetComponent<CustomerController>(out var customerController) || !customerController.isActiveAndEnabled)
         {
-            customerController.SetOrderArea(orderArea);
+            orderArea.UpdateState(false);
+            Destroy(customer);
+            return false;
         }
-
+        customerController.SetOrderArea(orderArea);
         return true;
     }
 

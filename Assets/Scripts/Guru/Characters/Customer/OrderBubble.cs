@@ -4,330 +4,126 @@ using UnityEngine;
 
 public class OrderBubble : DebuggableMonoBehaviour
 {
-    private readonly int maxSlots = 3;
-    public float slotSpacing = 0f; // Adjust this to control vertical distance
+    private const int MaxSlots = 3;
+    public float slotSpacing;
     public float deliveryAnimationDuration = 0.2f;
     public CustomerController customerController;
     private SpriteRenderer selfSpriteRenderer;
-    // List to store ordered food items.
-    private List<Food> orderedFoods = new List<Food>();
-
+    private readonly List<Food> orderedFoods = new List<Food>(MaxSlots);
+    private readonly HashSet<GameObject> deliveries = new HashSet<GameObject>();
+    private int pendingDeliveries;
     public FoodManager FM;
 
     protected override void Awake()
     {
         base.Awake();
         selfSpriteRenderer = GetComponent<SpriteRenderer>();
-        if (selfSpriteRenderer == null)
-        {
-            Debug.Log("OrderBubble: No SpriteRenderers found!");
-        }
-        if (customerController == null)
-        {
-            // try auto‑find on parent
-            customerController = GetComponentInParent<CustomerController>();
-        }
-        if (customerController == null)
-        {
-            Debug.LogWarning("OrderBubble: No CustomerController assigned or found in parents!");
-        }
-
-        // Order bubbles are enabled just before CustomerController calls
-        // StartOrder, so Unity may not have invoked this object's Start method
-        // yet. Resolve the manager during Awake as well as in StartOrder.
-        ResolveFoodManager();
-    }
-
-    public void Start()
-    {
+        if (customerController == null) customerController = GetComponentInParent<CustomerController>();
         ResolveFoodManager();
     }
 
     private void ResolveFoodManager()
     {
-        if (FM != null)
-        {
-            return;
-        }
-
-        var gameManager = GameObject.Find("GuruGameManager");
-        if (gameManager == null)
-        {
-            Debug.LogWarning("OrderBubble: GameManager not found in scene!");
-            return;
-        }
-
-        FM = gameManager.GetComponent<FoodManager>();
-        if (FM == null)
-        {
-            Debug.LogWarning("OrderBubble: FoodManager component not found on GameManager!");
-        }
+        if (FM == null) FM = FindFirstObjectByType<FoodManager>();
     }
 
-
-    // New StartOrder method that accepts a number parameter.
     public void StartOrder(int numberOfOrders = 1)
     {
         ResolveFoodManager();
-        if (FM == null)
+        if (FM == null || selfSpriteRenderer == null || customerController == null)
         {
-            Debug.LogError("OrderBubble: Cannot start order because FoodManager is unavailable.", this);
+            Debug.LogError("OrderBubble requires FoodManager, SpriteRenderer and CustomerController.", this);
             return;
         }
-
-        // Determine how many orders can be spawned based on remaining slots.
-        int availableSlots = maxSlots - orderedFoods.Count;
-        int spawnCount = Mathf.Min(numberOfOrders, availableSlots);
-
+        int spawnCount = Mathf.Clamp(numberOfOrders, 0, MaxSlots - orderedFoods.Count - pendingDeliveries);
         for (int i = 0; i < spawnCount; i++)
         {
-            // Get a new Food instance from FoodManager.
             Food food = FM.GetRandomFood();
-            // Make the food a child of OrderBubble.
+            if (food == null) return; // FoodManager reports invalid configuration before spawning.
             food.transform.SetParent(transform);
-
-            // Determine slot index based on the current count.
-            int slotIndex = orderedFoods.Count;
-            Vector3 spawnPosition = CalculateOrderPosition(slotIndex);
-            food.transform.position = spawnPosition;
-
-            // Debug.Log("OrderedFood is " + food.foodName);
-            // Store the new order in the list.
+            food.transform.position = CalculateOrderPosition(orderedFoods.Count);
             orderedFoods.Add(food);
         }
     }
 
-    protected override void UpdateLogStatus()
-    {
-        isDebugEnabled = logSettings.OrderBubbleLogs;
-    }
+    protected override void UpdateLogStatus() => isDebugEnabled = logSettings != null && logSettings.OrderBubbleLogs;
 
     private Vector3 CalculateOrderPosition(int slotIndex)
     {
-        Vector3 spawnPosition = transform.position;
-        // Adjust the x position as before.
-        spawnPosition.x -= selfSpriteRenderer.bounds.size.x * 1.5f / 10;
-
-        // Get the bubble's height and compute the bottom Y coordinate.
-        float bubbleHeight = selfSpriteRenderer.bounds.size.y;
-        float bottomY = transform.position.y - bubbleHeight / 2;
-
-        // Fixed percentages for 3 slots: 10%, 40%, and 70%.
-        float[] percentages = new float[3] { 0.80f, 0.50f, 0.20f };
-        spawnPosition.y = bottomY + percentages[slotIndex] * bubbleHeight;
-
-        return spawnPosition;
+        Vector3 position = transform.position;
+        position.x -= selfSpriteRenderer.bounds.size.x * 0.15f;
+        float height = selfSpriteRenderer.bounds.size.y;
+        position.y = transform.position.y - height / 2 + (0.8f - slotIndex * 0.3f) * height;
+        return position;
     }
-    // Optional: a method to retrieve the current list of orders.
-    public List<Food> GetOrders()
-    {
-        return orderedFoods;
-    }
+
+    public List<Food> GetOrders() => orderedFoods;
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other == null) return;
-
-        Debug.Log("What is this? " + other.name);
-
-        if (other.GetComponent<PlateDraggable>() != null)
-        {
-
-            // Debug.Log("Plate draggable entered order bubble: " + other.GetComponent<PlateDraggable>().GetCurrentIngredientsListString());
-            ProcessFoodDelivery(other.GetComponent<PlateDraggable>());
-        }
-
-        if (other.GetComponent<CupDraggable>() != null)
-        {
-            // Debug.Log("Cup draggable entered order bubble: " + other.GetComponent<CupDraggable>().GetCurrentIngredientsListString());
-            ProcessFoodDeliveryCup(other.GetComponent<CupDraggable>());
-        }
-
-
-        // if (other.TryGetComponent<FoodDraggable>(out var foodDraggable))
-        // {
-        //     Log($"Food draggable entered order bubble: {foodDraggable.foodName}");
-        //     ProcessFoodDelivery(foodDraggable);
-        // }
+        if (other == null || customerController == null || customerController.isWalkingOffScreen ||
+            deliveries.Contains(other.gameObject)) return;
+        if (other.TryGetComponent<PlateDraggable>(out var plate))
+            ProcessDelivery(plate, plate.GetCurrentIngredientsList(), false);
+        else if (other.TryGetComponent<CupDraggable>(out var cup))
+            ProcessDelivery(cup, cup.GetCurrentIngredientsList(), true);
     }
 
-    // private bool ValidateOrder(List<DraggableObjectSO> inputList, out Food matchedFood, out int index)
-    // {
-    //     Debug.Log("Validating  Order Called");
-    //     for (index = 0; index < orderedFoods.Count; index++)
-    //     {
-    //     }
-    //     matchedFood = null;
-    //     return false;
-    // }
-
-    private bool ValidateOrder(
-        List<DraggableObjectSO> inputList,
-        out Food matchedFood,
-        out int index)
+    private void ProcessDelivery(DraggableObject delivered, List<DraggableObjectSO> ingredients, bool ordered)
     {
-        Debug.Log("Validating Order Called");
-
-        // Loop over every possible order in your queued list
-        for (index = 0; index < orderedFoods.Count; index++)
+        for (int i = 0; i < orderedFoods.Count; i++)
         {
-            var order = orderedFoods[index];
-            var ingredients = order.ingredientsDraggableObjectSOArray;
-
-            // Quick check: must have same number of ingredients
-            if (inputList.Count != ingredients.Count)
-                continue;
-
-            // Make a temp copy we can remove matches from
-            var temp = new List<DraggableObjectSO>(ingredients);
-            bool allFound = true;
-
-            // Try to find each submitted ingredient in the temp list
-            foreach (var submitted in inputList)
-            {
-                if (temp.Contains(submitted))
-                {
-                    temp.Remove(submitted);
-                }
-                else
-                {
-                    allFound = false;
-                    break;
-                }
-            }
-
-            // If we removed every expected ingredient, it's a match
-            if (allFound)
-            {
-                matchedFood = order;
-                return true;
-            }
+            Food food = orderedFoods[i];
+            // A plate cannot fulfill a drink order or vice versa.
+            if (food == null || (food.GetComponent<CupDraggable>() != null) != ordered ||
+                !OrderRules.Matches(ingredients, food.ingredientsDraggableObjectSOArray, ordered)) continue;
+            orderedFoods.RemoveAt(i);
+            deliveries.Add(delivered.gameObject);
+            pendingDeliveries++;
+            // The icon belongs to the bubble; the physical dish is consumed and cannot reenter.
+            foreach (var collider in delivered.GetComponents<Collider2D>()) collider.enabled = false;
+            delivered.enabled = false;
+            if (GameManager.Instance != null && GameManager.Instance.currentlyDragging == delivered)
+                GameManager.Instance.currentlyDragging = null;
+            StartCoroutine(AnimateDeliveryAndCleanup(delivered.gameObject, food.gameObject));
+            return;
         }
-
-        // No match found
-        matchedFood = null;
-        index = -1;
-        return false;
+        customerController.OnWrongDelivery(delivered.name);
     }
 
-    private void ProcessFoodDeliveryCup(CupDraggable delivered)
+    private IEnumerator AnimateDeliveryAndCleanup(GameObject delivered, GameObject icon)
     {
-        List<DraggableObjectSO> Ling = delivered.GetCurrentIngredientsList();
-        bool isFinal = (orderedFoods.Count == 1);
-
-        // 1) validation / extraction
-        if (ValidateOrderCup(Ling, out var matchedFood, out var idx))
-        {
-            // 2) remove from list & reposition
-            orderedFoods.RemoveAt(idx);
-            // delivered.CancelDrag();
-            // 3) animate & cleanup
-            StartCoroutine(AnimateDeliveryAndCleanup(delivered.gameObject, matchedFood.gameObject, isFinal));
-        }
-        else
-        {
-            // wrong item
-            Log($"OrderBubble: No matching order found for '{name}'");
-            customerController.OnWrongDelivery(name);
-        }
-    }
-
-    private bool ValidateOrderCup(
-    List<DraggableObjectSO> inputList,
-    out Food matchedFood,
-    out int index)
-    {
-        Debug.Log("Validating Cup Order Called");
-
-        for (index = 0; index < orderedFoods.Count; index++)
-        {
-            var order = orderedFoods[index];
-            var ingredients = order.ingredientsDraggableObjectSOArray;
-
-            // must have same length
-            if (inputList.Count != ingredients.Count)
-                continue;
-
-            // element-by-element comparison
-            bool allMatch = true;
-            for (int i = 0; i < inputList.Count; i++)
-            {
-                if (inputList[i] != ingredients[i])
-                {
-                    allMatch = false;
-                    break;
-                }
-            }
-
-            if (allMatch)
-            {
-                matchedFood = order;
-                return true;
-            }
-        }
-
-        // no exact-order match found
-        matchedFood = null;
-        index = -1;
-        return false;
-    }
-
-
-    private void ProcessFoodDelivery(PlateDraggable delivered)
-    {
-        List<DraggableObjectSO> Ling = delivered.GetCurrentIngredientsList();
-        bool isFinal = (orderedFoods.Count == 1);
-
-        // 1) validation / extraction
-        if (ValidateOrder(Ling, out var matchedFood, out var idx))
-        {
-            // 2) remove from list & reposition
-            orderedFoods.RemoveAt(idx);
-            // delivered.CancelDrag();
-            // 3) animate & cleanup
-            StartCoroutine(AnimateDeliveryAndCleanup(delivered.gameObject, matchedFood.gameObject, isFinal));
-        }
-        else
-        {
-            // wrong item
-            Log($"OrderBubble: No matching order found for '{name}'");
-            customerController.OnWrongDelivery(name);
-        }
-        // Debug print all ordered foods
-
-    }
-
-
-    private IEnumerator AnimateDeliveryAndCleanup(GameObject deliveredObj, GameObject iconObj, bool isFinal)
-    {
-        Vector3 startPos = deliveredObj.transform.position;
-        Vector3 endPos = iconObj.transform.position;
-        float elapsed = 0f;
-
-        // Optional: bring the delivered sprite to front
-        var sr = deliveredObj.GetComponent<SpriteRenderer>();
-        if (sr != null) sr.sortingOrder = selfSpriteRenderer.sortingOrder + 1;
-
-        while (elapsed < deliveryAnimationDuration)
+        Vector3 start = delivered.transform.position;
+        Vector3 end = icon.transform.position;
+        var sprite = delivered.GetComponent<SpriteRenderer>();
+        if (sprite != null && selfSpriteRenderer != null) sprite.sortingOrder = selfSpriteRenderer.sortingOrder + 1;
+        float elapsed = 0;
+        while (elapsed < deliveryAnimationDuration && delivered != null && icon != null)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / deliveryAnimationDuration);
-            deliveredObj.transform.position = Vector3.Lerp(startPos, endPos, t);
+            delivered.transform.position = Vector3.Lerp(start, end, Mathf.Clamp01(elapsed / deliveryAnimationDuration));
             yield return null;
         }
+        deliveries.Remove(delivered);
+        pendingDeliveries--;
+        if (icon != null) Destroy(icon);
+        if (delivered != null) Destroy(delivered);
+        if (customerController == null || customerController.isWalkingOffScreen) yield break;
+        // Only the last completed animation resolves the customer, independent of delivery order.
+        if (orderedFoods.Count == 0 && pendingDeliveries == 0) customerController.OnAllOrdersFulfilled();
+        else customerController.OnCorrectDelivery();
+    }
 
-        // ensure exact alignment
-        deliveredObj.transform.position = endPos;
-
-        // cleanup
-        Destroy(iconObj);
-        Destroy(deliveredObj);
-
-
-
-        if (isFinal)
-            customerController.OnAllOrdersFulfilled();
-        else
-            customerController.OnCorrectDelivery();
+    protected override void OnDisable()
+    {
+        StopAllCoroutines();
+        foreach (var delivered in deliveries) if (delivered != null) Destroy(delivered);
+        deliveries.Clear();
+        pendingDeliveries = 0;
+        foreach (var food in orderedFoods) if (food != null) Destroy(food.gameObject);
+        orderedFoods.Clear();
+        // Accepted icons remain children until their animation ends or the bubble is disabled.
+        foreach (var food in GetComponentsInChildren<Food>(true)) Destroy(food.gameObject);
+        base.OnDisable();
     }
 }

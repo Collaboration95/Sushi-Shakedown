@@ -27,13 +27,13 @@ public class OrderArea : MonoBehaviour
     public void UpdateState(bool occupied)
     {
         isOccupied = occupied;
-        Debug.Log($"Order area {gameObject.name} is now {(occupied ? "occupied" : "free")}.");
+        RuntimeLog.Write($"Order area {gameObject.name} is now {(occupied ? "occupied" : "free")}.");
     }
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Customer"))
         {
-            Debug.Log($"Customer entered order area: {gameObject.name}");
+            RuntimeLog.Write($"Customer entered order area: {gameObject.name}");
         }
     }
 }

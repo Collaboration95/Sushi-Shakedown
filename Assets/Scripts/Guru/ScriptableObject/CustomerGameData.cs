@@ -83,19 +83,15 @@ public class CustomerData : ScriptableObject
     public void IncrementGrillSpeed()
     {
         GrillSpeedCount++;
-        OnGrillSpeed_Increased?.Invoke(GrillAreaCount);
+        OnGrillSpeed_Increased?.Invoke(GrillSpeedCount);
     }
 
-    private void OnEnable()
-    {
-        // Initialize the data when the scriptable object is enabled.
-        OnStartup();
-        // gameMode = GameMode.Waves; // Default mode
-    }
 
     public int GetRansom(int day)
     {
-        // day is 0 indexed
+        if (day < 1) throw new ArgumentOutOfRangeException(nameof(day));
+        if (Ransom == null || Ransom.Length == 0)
+            throw new InvalidOperationException("CustomerData requires a non-empty ransom schedule.");
         return Ransom[(day - 1) % Ransom.Length];
     }
 
@@ -104,7 +100,7 @@ public class CustomerData : ScriptableObject
         if (gameMode != mode)
         {
             gameMode = mode;
-            Debug.Log($"Game mode set to: {gameMode}");
+            RuntimeLog.Write($"Game mode set to: {gameMode}");
             OnGameModeChanged?.Invoke(gameMode);
         }
     }
@@ -115,7 +111,7 @@ public class CustomerData : ScriptableObject
         if (difficulty != diff)
         {
             difficulty = diff;
-            Debug.Log($"Game difficulty set to  : {difficulty}");
+            RuntimeLog.Write($"Game difficulty set to  : {difficulty}");
             OnDifficultyChanged?.Invoke(difficulty);
         }
     }
@@ -133,7 +129,7 @@ public class CustomerData : ScriptableObject
         {
             CustomerCoins = 10; // Start at day 1
         }
-        Debug.Log("CustomerData initialized.");
+        RuntimeLog.Write("CustomerData initialized.");
     }
 
     public void Increment()
@@ -147,12 +143,12 @@ public class CustomerData : ScriptableObject
 
         score += amount;
         IncrementCustomerCoins(amount);
-        // Debug.Log("Score is " + score);
+        // RuntimeLog.Write("Score is " + score);
         if (amount > 5)
             HappyCustomerCount++;
         else
             normalCustomersCount++;
-        // Debug.Log($"Score +{amount}. Total: {score}. Normal served: {normalCustomersCount}");
+        // RuntimeLog.Write($"Score +{amount}. Total: {score}. Normal served: {normalCustomersCount}");
         OnScoreChanged?.Invoke(score);
     }
 
@@ -161,7 +157,7 @@ public class CustomerData : ScriptableObject
         score -= amount;
         DecrementCustomerCoins(amount);
         angryCustomersCount++;
-        // Debug.Log($"Score –{amount}. Total: {score}. Angry served: {angryCustomersCount}");
+        // RuntimeLog.Write($"Score –{amount}. Total: {score}. Angry served: {angryCustomersCount}");
         OnScoreChanged?.Invoke(score);
     }
 
@@ -171,7 +167,7 @@ public class CustomerData : ScriptableObject
         normalCustomersCount = 0;
         angryCustomersCount = 0;
         HappyCustomerCount = 0;
-        Debug.Log("Score data reset.");
+        RuntimeLog.Write("Score data reset.");
         OnScoreChanged?.Invoke(score);
     }
 
@@ -182,7 +178,7 @@ public class CustomerData : ScriptableObject
         ResetWaveCount();
         ResetScore();
         ResetCustomerCoins();
-        Debug.Log("All data reset.");
+        RuntimeLog.Write("All data reset.");
         GrillAreaCount = 2;
         FoodAssemblyAreaCount = 2;
         GrillSpeedCount = 1;

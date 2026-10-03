@@ -1,5 +1,4 @@
 using System.Collections;
-using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI; // Kept for Text component on textBubble
 
@@ -58,7 +57,6 @@ public class CustomerController : DebuggableMonoBehaviour
     public OrderArea assignedOrderArea; // Exposed if you still want to check later
 
     // === Difficulty ===
-    private readonly int[] DifficultyMultiplierArr = { 1, 2 };
     private int difficultyMultiplier = 1; // Default to Easy
 
     private int patienceLevelMultiplier = 1;
@@ -99,12 +97,23 @@ public class CustomerController : DebuggableMonoBehaviour
         if (customerAnimator == null)
             customerAnimator = GetComponent<Animator>();
 
+        if (customerAnimator == null || spriteRenderer == null || customerData == null ||
+            CustomerData == null || orderBubble == null || OrderBubble == null || patienceBar == null)
+        {
+            Debug.LogError("CustomerController has missing required animation, order, patience or data references.", this);
+            enabled = false;
+            return;
+        }
+        // Keep the existing controller if no visual variants are configured.
         // 2) stash the base controller that's currently assigned
         originalController = customerAnimator.runtimeAnimatorController;
 
         // 3) randomly pick one of the two
-        int t = Random.Range(0, overrideControllers.Count);  // 50/50 chance
-        customerAnimator.runtimeAnimatorController = overrideControllers[t];
+        if (overrideControllers != null && overrideControllers.Count > 0)
+        {
+            int t = Random.Range(0, overrideControllers.Count);
+            if (overrideControllers[t] != null) customerAnimator.runtimeAnimatorController = overrideControllers[t];
+        }
 
     }
 
@@ -120,32 +129,41 @@ public class CustomerController : DebuggableMonoBehaviour
 
     private void Start()
     {
-        currentPatience = cs.PatienceLevel; // Set initial patience level from CustomerData
+        currentPatience = maxPatience;
         customerAnimator.SetBool("isWalking", true);
     }
 
     protected override void OnEnable()
     {
         base.OnEnable(); // Call the base class method to set up logging
+        if (customerData == null || !enabled) return;
+        OnDifficultyChanged(customerData.difficulty);
+        OnPatienceLevelIncreased(customerData.PatienceLevel);
         customerData.OnDifficultyChanged += OnDifficultyChanged;
         customerData.OnPatienceLevel_Increased += OnPatienceLevelIncreased;
     }
     protected override void OnDisable()
     {
         base.OnDisable(); // Call the base class method to clean up logging
-        customerData.OnDifficultyChanged -= OnDifficultyChanged;
-        customerData.OnPatienceLevel_Increased -= OnPatienceLevelIncreased;
+        if (customerData != null)
+        {
+            customerData.OnDifficultyChanged -= OnDifficultyChanged;
+            customerData.OnPatienceLevel_Increased -= OnPatienceLevelIncreased;
+        }
+        StopAllCoroutines();
+        progressRoutine = null;
+        if (!isWalkingOffScreen && assignedOrderArea != null) assignedOrderArea.UpdateState(false);
     }
     protected override void UpdateLogStatus()
     {
-        isDebugEnabled = logSettings.CustomerControllerLogs;
+        isDebugEnabled = logSettings != null && logSettings.CustomerControllerLogs;
     }
     private void OnDifficultyChanged(Difficulty difficulty)
     {
         // Update the speed based on the difficulty level
         Log($"CustomerController: Difficulty changed to {difficulty}");
-        Log("New Difficulaty multiplier is " + DifficultyMultiplierArr[(int)difficulty]);
-        difficultyMultiplier = DifficultyMultiplierArr[(int)difficulty];
+
+        difficultyMultiplier = difficulty == Difficulty.Hard ? 2 : 1;
 
     }
 
@@ -161,36 +179,6 @@ public class CustomerController : DebuggableMonoBehaviour
     }
 
 
-
-    // void Update()
-    // {
-    //     // Move towards the assigned order area if not arrived.
-    //     if (!hasArrived && !isWalkingOffScreen)
-    //     {
-    //         Vector2 currentPosition = transform.position;
-    //         Vector2 direction = (targetPosition - currentPosition).normalized;
-    //         transform.Translate(direction * speed * Time.deltaTime);
-
-    //         if (Vector2.Distance(currentPosition, targetPosition) < 0.1f)
-    //         {
-    //             ArrivedAtCounter();
-    //             hasArrived = true;
-    //         }
-    //     }
-    //     else if (isWalkingOffScreen)
-    //     {
-    //         Vector2 currentPosition = transform.position;
-    //         Vector2 direction = (offScreenTarget - currentPosition).normalized;
-    //         transform.Translate(direction * speed * Time.deltaTime);
-
-    //         if (Vector2.Distance(currentPosition, offScreenTarget) < 0.1f)
-    //         {
-    //             Log("Customer has walked off screen.");
-    //             isWalkingOffScreen = false;
-    //             Destroy(gameObject);
-    //         }
-    //     }
-    // }
 
     void Update()
     {
@@ -208,7 +196,7 @@ public class CustomerController : DebuggableMonoBehaviour
             spriteRenderer.flipX = (direction.x < 0);
 
             // ② actually move
-            transform.Translate(direction * speed * Time.deltaTime);
+            transform.position = Vector2.MoveTowards(currentPosition, dest, speed * Time.deltaTime);
 
             // ③ arrival checks
             if (!hasArrived && !isWalkingOffScreen &&
@@ -231,12 +219,13 @@ public class CustomerController : DebuggableMonoBehaviour
 
         float waitPerPoint = totalSeconds / maxPatience / difficultyMultiplier;
 
-        while (currentPatience > 0)
+        var tick = new WaitForSeconds(Mathf.Max(0.01f, waitPerPoint));
+        while (currentPatience > 0 && !isWalkingOffScreen)
         {
             // update the UI
             patienceBar.SetHealth(currentPatience);
 
-            yield return new WaitForSeconds(waitPerPoint);
+            yield return tick;
             currentPatience--;
         }
 
@@ -248,6 +237,7 @@ public class CustomerController : DebuggableMonoBehaviour
     void SetOffScreenTarget()
     {
         Camera cam = Camera.main;
+        if (cam == null) { offScreenTarget = (Vector2)transform.position + Vector2.right * 20; return; }
         Vector3 viewportPos = cam.WorldToViewportPoint(transform.position);
         Vector3 targetViewportPos;
 
@@ -271,7 +261,7 @@ public class CustomerController : DebuggableMonoBehaviour
 
     void ArrivedAtCounter()
     {
-        textBubble.SetActive(false);
+        if (textBubble != null) textBubble.SetActive(false);
         OrderBubble.SetActive(true);
         customerAnimator.SetBool("isWalking", false);
         // orderBubble.StartOrder(Random.Range(1, 4));
@@ -285,6 +275,7 @@ public class CustomerController : DebuggableMonoBehaviour
     }
     public void OnCorrectDelivery()
     {
+        if (isWalkingOffScreen || !isActiveAndEnabled) return;
         Log("CustomerController: Correct delivery! boosted patience.");
 
 
@@ -311,6 +302,8 @@ public class CustomerController : DebuggableMonoBehaviour
 
     public void OnAllOrdersFulfilled()
     {
+        if (isWalkingOffScreen || !isActiveAndEnabled) return;
+        isWalkingOffScreen = true;
         // 1) stop patience timer
         if (progressRoutine != null)
             StopCoroutine(progressRoutine);
@@ -320,6 +313,10 @@ public class CustomerController : DebuggableMonoBehaviour
 
     void OrderFailed(int reason)
     {
+        if (isWalkingOffScreen || !isActiveAndEnabled) return;
+        isWalkingOffScreen = true;
+        if (progressRoutine != null) StopCoroutine(progressRoutine);
+        progressRoutine = null;
         if (reason == 1)
         {
             // customer ran out of patience 
@@ -334,13 +331,13 @@ public class CustomerController : DebuggableMonoBehaviour
             // on wrong delivery 
         }
         // spriteRenderer.sprite = angrySprite;
-        redexclaim.SetActive(true);
+        if (redexclaim != null) redexclaim.SetActive(true);
         PlayOrderFailed();
 
         OrderBubble.SetActive(false);
         SetOffScreenTarget();
         isWalkingOffScreen = true;
-        assignedOrderArea.UpdateState(false);
+        if (assignedOrderArea != null) assignedOrderArea.UpdateState(false);
     }
 
     // Updated method to set the off-screen target based on viewport bounds.
@@ -354,7 +351,7 @@ public class CustomerController : DebuggableMonoBehaviour
         // Update sprite based on patience level
         if (patiencePercent > 75)
         {
-            Wow.SetActive(true);
+            if (Wow != null) Wow.SetActive(true);
         }
         else if (patiencePercent < 35)
         {
@@ -363,9 +360,9 @@ public class CustomerController : DebuggableMonoBehaviour
         else
         {
             // Middle range            
-            Meh.SetActive(true);
-            redexclaim.SetActive(false);
-            Wow.SetActive(false);
+            if (Meh != null) Meh.SetActive(true);
+            if (redexclaim != null) redexclaim.SetActive(false);
+            if (Wow != null) Wow.SetActive(false);
         }
 
         PlayOrderSuccess(patiencePercent);
@@ -378,7 +375,7 @@ public class CustomerController : DebuggableMonoBehaviour
         score *= OrderMultiplier;
         CustomerData.AddScore(score);
 
-        CoinHandler.Instance.SpawnCoins(score, transform.position);
+        if (CoinHandler.Instance != null) CoinHandler.Instance.SpawnCoins(score, transform.position);
 
         if (progressRoutine != null)
         {

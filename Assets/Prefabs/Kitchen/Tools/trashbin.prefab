@@ -93,6 +93,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   draggableInZone: {fileID: 0}
+  cd: {fileID: 11400000, guid: 7d331a6a33ff24ec4b364a57269a07b1, type: 2}
 --- !u!1 &4423289099578482616
 GameObject:
   m_ObjectHideFlags: 0

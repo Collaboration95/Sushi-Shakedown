@@ -28,6 +28,7 @@ public class AudioManager : MonoBehaviour
 
     private void Start()
     {
+        if (Instance != this) return;
         // One-shot SFX event subscriptions
         EventManager.Instance.Subscribe<object>("ObjectCutAudio", OnCut);
         EventManager.Instance.Subscribe<object>("ObjectTrashedAudio", OnTrash);
@@ -44,6 +45,7 @@ public class AudioManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this) Instance = null;
         if (EventManager.Instance == null) return;
 
         EventManager.Instance.Unsubscribe<object>("ObjectCutAudio", OnCut);
@@ -86,10 +88,15 @@ public class AudioManager : MonoBehaviour
     private void OnGrillStart(object sender)
     {
         Transform grillTransform = (sender as MonoBehaviour)?.transform;
-        if (grillTransform == null || loopAudioSources.ContainsKey(grillTransform)) return;
+        if (grillTransform == null || audioClipRefsSO == null) return;
+        if (loopAudioSources.TryGetValue(grillTransform, out var existing) && existing != null) return;
+        // Remove destroyed scene keys only when starting a loop, never every frame.
+        var stale = new List<Transform>();
+        foreach (var entry in loopAudioSources) if (entry.Key == null || entry.Value == null) stale.Add(entry.Key);
+        foreach (var key in stale) loopAudioSources.Remove(key);
 
         GameObject audioGO = new GameObject("GrillLoopSFX");
-        audioGO.transform.position = grillTransform.position;
+        audioGO.transform.SetParent(grillTransform, false);
 
         AudioSource source = audioGO.AddComponent<AudioSource>();
         source.clip = audioClipRefsSO.grill;
@@ -105,8 +112,11 @@ public class AudioManager : MonoBehaviour
         Transform grillTransform = (sender as MonoBehaviour)?.transform;
         if (grillTransform == null || !loopAudioSources.TryGetValue(grillTransform, out AudioSource source)) return;
 
-        source.Stop();
-        Destroy(source.gameObject);
+        if (source != null)
+        {
+            source.Stop();
+            Destroy(source.gameObject);
+        }
         loopAudioSources.Remove(grillTransform);
     }
 

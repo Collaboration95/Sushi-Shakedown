@@ -8,15 +8,12 @@ public class SpawnZoneData : MonoBehaviour
     public float MinY => minY;
     public float MaxY => maxY;
 
-    void Start()
+    void Awake()
     {
         if (TryGetComponent<BoxCollider2D>(out var col))
         {
-            float halfHeight = col.size.y * 0.5f;
-            float centerY = transform.position.y + col.offset.y;
-
-            minY = centerY - halfHeight;
-            maxY = centerY + halfHeight;
+            minY = col.bounds.min.y;
+            maxY = col.bounds.max.y;
         }
         else
         {

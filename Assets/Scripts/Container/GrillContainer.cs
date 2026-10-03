@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem.Interactions;
 using UnityEngine.UI;
 
 public class GrillContainer : BaseContainer
@@ -18,11 +17,17 @@ public class GrillContainer : BaseContainer
     private int grillingMultiplier = 1; // default multiplier
     private void OnEnable()
     {
+        if (cs == null) { Debug.LogError("Cooking station requires CustomerData.", this); enabled = false; return; }
+        grillingMultiplier = cs.GrillSpeedCount;
         cs.OnGrillSpeed_Increased += HandleGrillSpeedIncreased;
     }
     private void OnDisable()
     {
-        cs.OnGrillSpeed_Increased -= HandleGrillSpeedIncreased;
+        if (cs != null) cs.OnGrillSpeed_Increased -= HandleGrillSpeedIncreased;
+        if (EventManager.Instance != null) EventManager.Instance.Trigger<object>("GrillStopAudioLoop", this);
+        isGrilling = false;
+        activeRecipe = null;
+        grillingProgress = 0;
     }
 
     private void Start()
@@ -187,15 +192,18 @@ public class GrillContainer : BaseContainer
         }
         else
         {
-            Debug.Log($"No Owned Draggables in {gameObject.name}");
+            RuntimeLog.Write($"No Owned Draggables in {gameObject.name}");
         }
     }
 
     private GrillingRecipeSO GetRecipeWithInput(DraggableObjectSO input)
     {
+        if (grillingRecipeSOArray == null || input == null) return null;
         foreach (var recipe in grillingRecipeSOArray)
         {
-            if (recipe.inputIngredient == input)
+            if (recipe != null && recipe.inputIngredient == input && recipe.grillingProgressMax > 0 &&
+                recipe.outputIngredient != null && recipe.outputIngredient.prefab != null &&
+                recipe.outputIngredient.prefab.GetComponent<DraggableObject>() != null)
                 return recipe;
         }
         return null;

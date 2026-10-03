@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using static UnityEngine.RuleTile.TilingRuleOutput;
 
 [CreateAssetMenu(fileName = "GameDataSO", menuName = "Scriptable Objects/GameDataSO")]
 public class GameDataSO : ScriptableObject
